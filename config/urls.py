@@ -21,7 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     path("api/v1/users/", include("apps.users.api.v1.urls")),
-
     # Restaurant and order API endpoints are not implemented yet.
     # Remove these includes or add URL patterns in the respective app modules before enabling them.
     # path("api/v1/restaurant/", include("apps.restaurant.api.v1.urls")),
