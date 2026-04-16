@@ -15,8 +15,15 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    path("api/v1/users/", include("apps.users.api.v1.urls")),
+
+    # Restaurant and order API endpoints are not implemented yet.
+    # Remove these includes or add URL patterns in the respective app modules before enabling them.
+    # path("api/v1/restaurant/", include("apps.restaurant.api.v1.urls")),
+    # path("api/v1/order/", include("apps.order.api.v1.urls")),
 ]

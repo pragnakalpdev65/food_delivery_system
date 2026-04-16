@@ -16,6 +16,22 @@ class EnvSettings(BaseSettings):
     DB_PORT: int = 5432
     
     
+ 
+    # =============================================================================
+    # EMAIL
+    # =============================================================================
+
+    # Email Configuration
+    EMAIL_BACKEND: str = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST: str = "smtp.gmail.com"
+    EMAIL_PORT: int = 587
+    EMAIL_USE_TLS: bool = True
+    EMAIL_HOST_USER: str
+    EMAIL_HOST_PASSWORD: str
+    SITE_BASE_URL: str = "http://localhost:8000"   
+    
+
+    
 @lru_cache
 def get_settings() -> EnvSettings:
     """
