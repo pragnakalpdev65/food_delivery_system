@@ -1,0 +1,13 @@
+Verify your email - Food Delivery
+
+Hi {{ user }},
+
+Thanks for signing up for Food Delivery.
+
+Please verify your email address by clicking the link below:
+
+{{ verification_url }}
+
+If you didn’t create an account, you can safely ignore this email.
+
+— Food Delivery Team
