@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     'apps.users',
     'apps.restaurant',
     'apps.order',
@@ -74,6 +76,59 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+
+REST_FRAMEWORK = {
+    # Authentication: Use JWT by default
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    # # Permissions: Require authentication by default
+    # "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    # # Schema: Use drf-spectacular for OpenAPI
+    # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Pagination: Use our custom pagination class
+    "DEFAULT_PAGINATION_CLASS": "common.api.pagination.StandardPagination",
+    "PAGE_SIZE": 20,
+    # # Exception handling: Use our centralized handler for consistent JSON responses
+    # "EXCEPTION_HANDLER": "common.api.exceptions.standardized_exception_handler",
+    # Throttling: Limit API requests to prevent abuse
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",  # Anonymous users
+        "rest_framework.throttling.UserRateThrottle",  # Authenticated users
+        "rest_framework.throttling.ScopedRateThrottle",  # Per-endpoint limits
+    ],
+    # Throttle rates
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/hour",  # Anonymous requests
+        "user": "1000/hour",  # Authenticated requests
+        "resend_email": "1/minute",  # Resend email
+        "login": "5/minute",  # Login
+    },
+    # # Filtration
+    # "DEFAULT_FILTER_BACKENDS": [
+    #     "django_filters.rest_framework.DjangoFilterBackend"
+    # ]
+}
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+AUTHENTICATION_BACKENDS = [
+    'apps.users.services.auth_services.LoginService',
+    'django.contrib.auth.backends.ModelBackend', # Keep default as fallback
+]
+
+# Security Configuration
+MAX_LOGIN_ATTEMPTS = 3
+ACCOUNT_LOCKOUT_TIME = 300 
 
 
 # Database
@@ -151,3 +206,16 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+# =============================================================================
+# EMAIL
+# =============================================================================
+
+EMAIL_HOST = env.EMAIL_HOST
+EMAIL_PORT = env.EMAIL_PORT
+EMAIL_USE_TLS = env.EMAIL_USE_TLS
+EMAIL_HOST_USER = env.EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = env.EMAIL_HOST_PASSWORD
+SITE_BASE_URL = env.SITE_BASE_URL
