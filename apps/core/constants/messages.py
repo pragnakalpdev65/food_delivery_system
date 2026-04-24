@@ -56,5 +56,8 @@ class AuthMessages:
     DRIVER_NOT_FOUND = _("Driver profile not found")
     ADDRESS_NOT_FOUND = _("Address profile not found")
 
-
+    #restaurants
+    
+    ADD_MENU_PERMISSION_DENIED = _("Only Restaurant Owners can add menu items.")
+    
 

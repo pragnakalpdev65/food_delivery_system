@@ -17,7 +17,6 @@ import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -29,9 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -42,10 +39,10 @@ INSTALLED_APPS = [
     'rest_framework',
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
+    'django_filters',
     'apps.users',
     'apps.restaurant',
-    'apps.order',
-    
+    'apps.order',    
 ]
 
 MIDDLEWARE = [
@@ -104,10 +101,10 @@ REST_FRAMEWORK = {
         "resend_email": "1/minute",  # Resend email
         "login": "5/minute",  # Login
     },
-    # # Filtration
-    # "DEFAULT_FILTER_BACKENDS": [
-    #     "django_filters.rest_framework.DjangoFilterBackend"
-    # ]
+    # Filtration
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend"
+    ]
 }
 
 
@@ -162,8 +159,6 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
-
-
 
 AUTH_USER_MODEL = 'users.CustomUser'
 # Password validation
