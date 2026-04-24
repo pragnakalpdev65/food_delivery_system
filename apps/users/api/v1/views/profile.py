@@ -29,7 +29,7 @@ class CustomerProfileView(APIView):
     - Requires authentication.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """
@@ -90,7 +90,7 @@ class AddressView(APIView):
     - Requires authentication.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """
@@ -133,7 +133,7 @@ class AddressDetailView(APIView):
     - Requires authentication.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get_object(self, request, pk):
         """
@@ -218,7 +218,7 @@ class DriverProfileView(APIView):
     - Requires authentication.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """

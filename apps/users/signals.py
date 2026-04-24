@@ -14,8 +14,8 @@ def create_profile(sender,instance, created, **kwargs):
     if created:
         if instance.user_type == "customer":
             CustomerProfile.objects.create(user=instance)
-        if instance.user_type == "restaurant_owner": 
-            CustomerProfile.objects.create(user=instance)  
+        # if instance.user_type == "restaurant_owner": 
+        #     CustomerProfile.objects.create(user=instance)  
         if instance.user_type == "delivery_driver":
             DriverProfile.objects.create(user=instance)         
 
