@@ -71,7 +71,6 @@ class TestUserRegistrationAPI:
             "user_type":"customer",
         }
         response = api_client.post(url, payload, format="json")
-        print(response.data)        
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "username" in response.data
 

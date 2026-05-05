@@ -9,8 +9,22 @@ from rest_framework.views import APIView
 from apps.users.models import CustomUser
 from apps.users.services.email_services import AuthEmailService
 from apps.core.constants.messages import AuthMessages
+from drf_spectacular.utils import extend_schema, OpenApiExample
 
-
+@extend_schema(
+    description="Register a new user",
+    examples=[
+        OpenApiExample(
+            "Register",
+            value={
+                "email": "user@test.com",
+                "username": "user",
+                "password": "StrongPass123!",
+                "user_type": "customer"
+            }
+        )
+    ]
+)
 class UserRegistrationView(APIView):
     """
     API view responsible for user registration.

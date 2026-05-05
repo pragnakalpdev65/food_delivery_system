@@ -61,8 +61,6 @@ class TestLoginAPI:
         url = reverse("login")
         payload = {}
         response = api_client.post(url, payload, format="json")
-        print(response.data)
-
         assert response.data["username"][0] == "This field is required."
         assert response.data["password"][0] == "This field is required."
 
@@ -76,7 +74,6 @@ class TestLoginAPI:
             "password": "wrongPass123!",
         }
         response = api_client.post(url, payload, format="json")
-        print(response.data)
         assert response.status_code == 401
         assert response.data["detail"] == "Invalid email or password."
 
@@ -98,8 +95,6 @@ class TestLoginAPI:
             "password": "securepass123!",
         }
         response = api_client.post(url, payload, format="json")
-        print(response.data)
-
         assert response.data["detail"] == "Email not verified"
         assert response.status_code == 403
 
@@ -133,8 +128,6 @@ class TestLoginAPI:
             "password": "securepass123!",
         }
         response = api_client.post(url, payload, format="json")
-        print(response.data)
-
         assert response.status_code == 403
         assert "Account locked" in response.data["detail"]
 
@@ -161,7 +154,6 @@ class TestLogoutAPI:
 
         # Reusing same token should fail because it is now blacklisted
         response = api_client.post(url, payload, format="json")
-        print(response.data)
         assert "Invalid token." in response.data["detail"]
 
     def test_logout_without_token(self, api_client, user):
@@ -174,7 +166,6 @@ class TestLogoutAPI:
         response = api_client.post(
             url, {}, format="json"
         )  # Send request without refresh token
-        print(response.data)
 
         assert (
             response.data["refresh_token"][0] == "This field is required."
@@ -190,7 +181,5 @@ class TestLogoutAPI:
         payload = {"refresh_token": "invalidtoken"}  # intentionally malformed
 
         response = api_client.post(url, payload, format="json")
-        print(response.data)
-
         # API should reject invalid token format
         assert "Invalid token." in response.data["detail"]
