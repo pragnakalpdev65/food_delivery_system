@@ -163,7 +163,6 @@ class TestResendEmail:
         url = reverse("resend-verification")
         response = api_client.post(url, {"email": "usermissing@test.com"})
         
-        print(response.data)
         assert response.status_code == 400
         assert "User not found" in response.data["email"][0]
 

@@ -37,5 +37,3 @@ class MenuItem(TimestampedModel,UUIDModel):
     def __str__(self):
         return f"{self.name} - {self.restaurant.name}"
     
-    class Meta:
-        ordering = ["-created_at"]

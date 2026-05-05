@@ -15,14 +15,14 @@ class TestRestaurantAPI:
             email="owner@test.com",
             password="Ownerpass123!",
             username="owner",
-            user_type="Restaurant Owner"
+            user_type="restaurant_owner"
         )
 
         self.customer = User.objects.create_user(
             email="customer@test.com",
             password="Customerpass123!",
             username="customer",
-            user_type="Customer"
+            user_type="customer"
         )
 
     def test_create_restaurant_by_owner(self, api_client):
@@ -32,6 +32,7 @@ class TestRestaurantAPI:
         payload = {
             "name": "Test Restaurant",
             "cuisine_type": "indian",
+            "email":"restaurant@test.com",
             "address": "Surat",
             "opening_time": "10:00:00",
             "closing_time": "22:00:00",
@@ -40,7 +41,6 @@ class TestRestaurantAPI:
         }
 
         response = api_client.post(url, payload,format='json')
-
         assert response.status_code == status.HTTP_201_CREATED
         assert Restaurant.objects.count() == 1
 
@@ -74,9 +74,8 @@ class TestRestaurantAPI:
 
         url = reverse("restaurants-list")
         response = api_client.get(url)
-
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["data"]) == 1
+        assert len(response.data["results"]) == 1
 
     def test_search_restaurant(self, api_client):
         Restaurant.objects.create(
@@ -92,7 +91,7 @@ class TestRestaurantAPI:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["data"]) == 1
+        assert len(response.data["results"]) == 1
 
     def test_filter_restaurant_by_cuisine(self, api_client):
         Restaurant.objects.create(
@@ -108,4 +107,4 @@ class TestRestaurantAPI:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["data"]) == 1
+        assert len(response.data["results"]) == 1

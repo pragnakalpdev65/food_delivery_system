@@ -7,8 +7,27 @@ from rest_framework.views import APIView
 from apps.core.constants.messages import AuthMessages
 from apps.users.api.v1.serializers.login import LoginSerializer, LogoutSerializer
 from apps.users.services.auth_services import LoginService
+from drf_spectacular.utils import extend_schema, OpenApiExample
 
+@extend_schema(
+    tags=["Auth"],
+    summary="Login",
+    description="""
+Login and receive JWT tokens
 
+Use token:
+Authorization: Bearer <access_token>
+""",
+    examples=[
+        OpenApiExample(
+            "Login",
+            value={
+                "email": "user@test.com",
+                "password": "StrongPass123!"
+            }
+        )
+    ]
+)
 class LoginView(APIView):
     """Login API endpoint.Handles user authentication using email and password credentials."""
 

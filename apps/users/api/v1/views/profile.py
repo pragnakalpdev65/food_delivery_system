@@ -17,6 +17,8 @@ from apps.users.api.v1.serializers.profile import (
 )
 from apps.users.models import CustomUser
 from apps.users.models.profile import CustomerProfile, Address, DriverProfile
+from drf_spectacular.utils import extend_schema, OpenApiExample
+
 
 class CustomerProfileView(APIView):
     """
@@ -30,6 +32,12 @@ class CustomerProfileView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    
+    @extend_schema(
+    tags=["Users"],
+    summary="User Profile",
+    description="Get logged-in user details"
+    )
 
     def get(self, request):
         """

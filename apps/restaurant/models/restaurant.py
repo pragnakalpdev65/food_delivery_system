@@ -2,6 +2,8 @@ from django.db import models
 from common.models.base import TimestampedModel, UUIDModel
 from apps.users.models.user import CustomUser
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from django.db.models import Avg
 
 def validate_logo(image):
     if image.size > 5 * 1024 * 1024:
@@ -23,14 +25,13 @@ class Restaurant(TimestampedModel,UUIDModel):
         ('thai','Thai'),
         ('mediterranean','Mediterranean')     
     )
-    
     owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name="restaurants")
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     cuisine_type = models.CharField(max_length=30, choices=TYPE_OF_CUISINE, default="indian", db_index=True, help_text= "Type of Cuisine")
     address = models.TextField()
     phone_number = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(max_length=255, unique=True)  
+    email = models.EmailField(max_length=255, unique=True, blank=False, null=False)  
     logo = models.ImageField(upload_to="restaurants/logo/", validators=[validate_logo], blank=True, null=True) 
     banner = models.ImageField(upload_to="restaurants/banner/", validators=[validate_banner], blank=True, null=True) 
     opening_time = models.TimeField() 
@@ -40,6 +41,16 @@ class Restaurant(TimestampedModel,UUIDModel):
     minimum_order = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     average_rating =models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
     total_reviews = models.PositiveIntegerField(default=0)
-    
-    def __str__(self):
-        return self.name
+ 
+    def is_currently_open(self):
+        now = timezone.localtime().time()
+
+        if self.opening_time < self.closing_time:
+            return self.opening_time <= now <= self.closing_time
+        else:
+            return now >= self.opening_time or now <= self.closing_time
+
+    def update_average_rating(self):
+        avg_rating = self.reviews.aggregate(avg=Avg('rating'))['avg']
+        self.average_rating = avg_rating if avg_rating else 0
+        self.save(update_fields=['average_rating'])

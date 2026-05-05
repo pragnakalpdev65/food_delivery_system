@@ -16,14 +16,14 @@ class TestMenuItemAPI:
             email="owner@test.com",
             password="Ownerpass123!",
             username="owner",
-            user_type="Restaurant Owner"
+            user_type="restaurant_owner"
         )
 
         self.customer = User.objects.create_user(
             email="customer@test.com",
             password="Customerpass123!",
             username="customer",
-            user_type="Customer"
+            user_type="customer"
         )
 
         self.restaurant = Restaurant.objects.create(
@@ -48,7 +48,6 @@ class TestMenuItemAPI:
         }
 
         response = api_client.post(url, payload)
-        print(response.data)
         assert response.status_code == status.HTTP_201_CREATED
         assert MenuItem.objects.count() == 1
 
@@ -73,7 +72,7 @@ class TestMenuItemAPI:
             email="other1@test.com",
             password="Testpass123!",
             username="other",
-            user_type="Restaurant Owner"
+            user_type="restaurant_owner"
         )
 
         other_restaurant = Restaurant.objects.create(
@@ -98,7 +97,6 @@ class TestMenuItemAPI:
         }
 
         response = api_client.post(url, payload)
-        print(response.data)
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -113,10 +111,9 @@ class TestMenuItemAPI:
 
         url = reverse("menuitem-list")
         response = api_client.get(url)
-        print(response.data)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["data"]) == 1
+        assert len(response.data["results"]) == 1
 
     def test_filter_menu_items(self, api_client):
         MenuItem.objects.create(
@@ -131,4 +128,4 @@ class TestMenuItemAPI:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["data"]) == 1
+        assert len(response.data["results"]) == 1
