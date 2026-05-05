@@ -4,6 +4,7 @@ from apps.users.models.user import CustomUser
 
 from django.core.exceptions import ValidationError
 from apps.core.constants.messages import AuthMessages
+from django.db.models import Count
 
 def validate_avatar(image):
     if image.size > 5 * 1024 * 1024:
@@ -41,5 +42,13 @@ class DriverProfile(TimestampedModel,UUIDModel):
     total_deliveries = models.PositiveIntegerField(default=0)
     average_rating =models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
     
-    def __str__(self):
-        return self.user
+
+    def update_availability(self, status: bool):
+        self.is_available = status
+        self.save(update_fields=['is_available'])
+
+    def get_delivery_stats(self):
+        return {
+            "total_deliveries": self.orders.filter(status="DELIVERED").count(),
+            "active_deliveries": self.orders.filter(status__in=["ASSIGNED", "PICKED"]).count(),
+        }
