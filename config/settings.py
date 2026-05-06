@@ -14,9 +14,9 @@ from pathlib import Path
 
 from config.env import env
 import dj_database_url
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -29,9 +29,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -42,10 +40,12 @@ INSTALLED_APPS = [
     'rest_framework',
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
+    'django_filters',
     'apps.users',
     'apps.restaurant',
-    'apps.order',
-    
+    'apps.order',  
+    "channels",  
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -75,20 +75,33 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+# WSGI_APPLICATION = 'config.wsgi.application'
 
+ASGI_APPLICATION = "config.asgi.application"
+
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 REST_FRAMEWORK = {
     # Authentication: Use JWT by default
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    
     # # Permissions: Require authentication by default
     # "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     # # Schema: Use drf-spectacular for OpenAPI
     # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     # Pagination: Use our custom pagination class
-    "DEFAULT_PAGINATION_CLASS": "common.api.pagination.StandardPagination",
-    "PAGE_SIZE": 20,
+    # "DEFAULT_PAGINATION_CLASS": "common.api.pagination.StandardPagination",
+    # "PAGE_SIZE": 20,
     # # Exception handling: Use our centralized handler for consistent JSON responses
     # "EXCEPTION_HANDLER": "common.api.exceptions.standardized_exception_handler",
     # Throttling: Limit API requests to prevent abuse
@@ -97,17 +110,23 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",  # Authenticated users
         "rest_framework.throttling.ScopedRateThrottle",  # Per-endpoint limits
     ],
+    
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     # Throttle rates
     "DEFAULT_THROTTLE_RATES": {
         "anon": "100/hour",  # Anonymous requests
         "user": "1000/hour",  # Authenticated requests
         "resend_email": "1/minute",  # Resend email
         "login": "5/minute",  # Login
+        "Order creation": "20/hour",
+        "Review creation": "10/hour",
+        "Location updates": "500/hour", #(for drivers)
+
     },
-    # # Filtration
-    # "DEFAULT_FILTER_BACKENDS": [
-    #     "django_filters.rest_framework.DjangoFilterBackend"
-    # ]
+    # Filtration
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend"
+    ]
 }
 
 
@@ -163,8 +182,6 @@ else:
         }
     }
 
-
-
 AUTH_USER_MODEL = 'users.CustomUser'
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -219,3 +236,32 @@ EMAIL_USE_TLS = env.EMAIL_USE_TLS
 EMAIL_HOST_USER = env.EMAIL_HOST_USER
 EMAIL_HOST_PASSWORD = env.EMAIL_HOST_PASSWORD
 SITE_BASE_URL = env.SITE_BASE_URL
+
+
+# =============================================================================
+# MEDIA
+# =============================================================================
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR,'media')
+
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Food Delivery API",
+    "DESCRIPTION": "API documentation for Food Delivery System",
+    "VERSION": "1.0.0",
+
+    "SERVE_INCLUDE_SCHEMA": False,
+
+    # 🔐 JWT Auth config
+    "SECURITY": [{"BearerAuth": []}],
+    "COMPONENTS": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            }
+        }
+    },
+}

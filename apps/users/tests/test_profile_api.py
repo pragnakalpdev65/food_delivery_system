@@ -182,7 +182,6 @@ class TestCustomerProfileAPI:
         """Should return 404 when customer profile doesn't exist."""
         url = reverse("customer-profile")
         response = driver_authenticated_client.get(url)
-        print(response.data)
         assert "Customer profile not found" in response.data["detail"]
 
     def test_get_customer_profile_without_authentication(self, api_client):

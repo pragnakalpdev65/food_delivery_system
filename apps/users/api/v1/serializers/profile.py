@@ -365,7 +365,6 @@ class CurrentEmailConfirmSerializer(serializers.Serializer):
 
         cache.set(CacheKey.OLD_TOKEN % old_token, {"is_used": True}, timeout=60)
         mail_key = CacheKey.EMAIL_CHANGE % user.email
-        print("old_token",mail_key )
         data = cache.get(mail_key)
 
         if not data:
