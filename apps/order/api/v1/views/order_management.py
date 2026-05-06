@@ -9,14 +9,17 @@ from django.utils import timezone
 from apps.order.models.order import Order
 from apps.order.api.v1.serializers.orders import OrderSerializer
 from apps.permissions.order_permissions import IsRestaurantOwnerOrDriver
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from apps.core.constants.status import OrderStatus
+from drf_spectacular.utils import extend_schema
+from apps.core.constants.messages import AuthMessages
+from apps.core.constants.error_codes import ErrorCodes
 
 ACTIVE_STATUSES = [
-    "PENDING",
-    "CONFIRMED",
-    "PREPARING",
-    "READY",
-    "PICKED_UP",
+    OrderStatus.PENDING,
+    OrderStatus.CONFIRMED,
+    OrderStatus.PREPARING,
+    OrderStatus.READY,
+    OrderStatus.PICKED_UP,
 ]
 
 @extend_schema(
@@ -56,11 +59,20 @@ class OrderManagementViewSet(ReadOnlyModelViewSet):
         if not new_status:
             return Response({"error": "Status required"}, status=400)
 
+        current_status = order.status
+        allowed = VALID_TRANSITIONS.get(current_status, [])
+
+        if new_status not in allowed:
+            return Response(
+                {"error": AuthMessages.INVALID_TRANSITION,
+                 "code": ErrorCodes.INVALID_TRANSITIONS},
+                
+            )
         order.status = new_status
         order.save()
 
         return Response({
-            "message": "Order updated",
+            "message": AuthMessages.UPDATE_ORDER,
             "status": order.status
         })
 
@@ -69,7 +81,7 @@ class OrderManagementViewSet(ReadOnlyModelViewSet):
         order = self.get_object()
 
         if not order.created_at:
-            return Response({"error": "Invalid order"}, status=400)
+            return Response({"error": AuthMessages.INVALID_ORDER}, status=400)
 
         eta = order.created_at + timezone.timedelta(minutes=30)
 

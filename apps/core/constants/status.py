@@ -1,18 +1,10 @@
+from django.db import models
 
-PENDING = 'pending'
-CONFIRMED = 'confirmed'
-PREPARING = 'preparing'
-READY = 'ready'
-PICKED_UP = 'picked_up'
-DELIVERED = 'delivered'
-CANCELLED = 'cancelled'
-
-STATUS_TYPES = (
-    (PENDING, 'Pending'),
-    (CONFIRMED, 'Confirmed'),
-    (PREPARING, 'Preparing'),
-    (READY, 'Ready'),
-    (PICKED_UP, 'Picked Up'),
-    (DELIVERED, 'Delivered'),
-    (CANCELLED, 'Cancelled'),
-)
+class OrderStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    CONFIRMED = "confirmed", "Confirmed"
+    PREPARING = "preparing", "Preparing"
+    READY = "ready", "Ready"
+    PICKED_UP = "picked_up", "Picked Up"
+    DELIVERED = "delivered", "Delivered"
+    CANCELLED = "cancelled", "Cancelled"

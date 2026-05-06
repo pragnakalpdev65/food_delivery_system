@@ -86,7 +86,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         """
         logger.debug("Validating password strength")
         try:
-            validate_password(value)
+            # validate_password(value)
+            # Create a temporary user instance for context-aware validation
+            # This allows checking against username/email without saving to DB
+            temp_user = User(
+                username=self.initial_data.get('username', ''),
+                email=self.initial_data.get('email', '')
+            )
+            validate_password(value, user=temp_user)
         except Exception as e:
             logger.warning("Password validation failed", extra={"reason": str(e)})
             raise serializers.ValidationError(

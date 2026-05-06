@@ -157,7 +157,8 @@ class ResetPasswordConfirmSerializer(serializers.Serializer):
             extra={"user_id": user.id},
         )
 
-        user.set_password(new_password)
+        self.validate_new_password(new_password)
+        user.set_password(new_password)        
         user.save(update_fields=["password"])
 
         logger.debug(
