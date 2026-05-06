@@ -1,0 +1,13 @@
+---
+sourceLocationPrefix: /home/pragnakalpl12/Desktop/FoodDelivery/food_delivery_system
+baselineLinesOfCode: 4798
+unicodeNewlines: false
+columnKind: utf32
+primaryLanguage: python
+creationMetadata:
+  sha: ba65cf93ce5db68dede4b7b71dc9d26da158d01f
+  cliVersion: 2.25.0
+  creationTime: 2026-05-05T12:42:46.203665085Z
+overlayBaseDatabase: false
+overlayDatabase: false
+finalised: true
