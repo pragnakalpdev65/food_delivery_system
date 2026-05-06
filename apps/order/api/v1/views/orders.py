@@ -220,3 +220,15 @@ class OrderViewSet(ModelViewSet):
             }
         )
         
+    @action(detail=True, methods=['get'])
+    def eta(self, request, pk=None):
+        order = self.get_object()
+        print(order)
+        if not order.created_at:
+            return Response({"error": AuthMessages.INVALID_ORDER}, status=400)
+
+        eta = order.created_at + timezone.timedelta(minutes=30)
+
+        return Response({
+            "estimated_delivery_time": eta
+        })
