@@ -9,6 +9,7 @@ from rest_framework import serializers
 from apps.core.constants.error_codes import ErrorCodes
 from apps.core.constants.messages import AuthMessages
 from apps.users.services.email_services import AuthEmailService
+from django.core.exceptions import ValidationError 
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -86,19 +87,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         """
         logger.debug("Validating password strength")
         try:
-            # validate_password(value)
-            # Create a temporary user instance for context-aware validation
-            # This allows checking against username/email without saving to DB
-            temp_user = User(
-                username=self.initial_data.get('username', ''),
-                email=self.initial_data.get('email', '')
-            )
-            validate_password(value, user=temp_user)
-        except Exception as e:
-            logger.warning("Password validation failed", extra={"reason": str(e)})
+            validate_password(value)
+
+        except ValidationError :
+            logger.warning("Password validation failed")
             raise serializers.ValidationError(
-                str(e), code=ErrorCodes.INVALID_PASSWORD
-            ) from e
+                AuthMessages.INVALID_PASSWORD, code=ErrorCodes.INVALID_PASSWORD
+            )
+
         return value
 
     def create(self, validated_data):
