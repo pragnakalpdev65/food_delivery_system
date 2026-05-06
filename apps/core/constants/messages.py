@@ -61,3 +61,34 @@ class AuthMessages:
     ADD_MENU_PERMISSION_DENIED = _("Only Restaurant Owners can add menu items.")
     
 
+    # order
+    ALREADY_CANCELLED = _("Order is already cancelled")
+    CAN_NOT_BE_CANCELLED = _("Order cannot be cancelled at this stage")
+    CANCELLED_SUCCESS = _("Order cancelled successfully")
+    UPDATE_ORDER = _("Order updated")
+    INVALID_ORDER = _("Invalid order")
+    DRIVER_REQUIRED = _( "driver_id is required")
+    DRIVER_NOT_FOUND = _("Driver profile not found")
+    ALREADY_ASSIGNED = _("Driver already assigned")
+    MUST_BE_READY = _("Order must be READY before assigning driver")
+    ASSIGN_SUCCESS = _("Driver assigned successfully")
+    STATUS_REQUIRED = _("Status is required")
+    INVALID_TRANSITION = _(
+        "Invalid transition from %(current_status)s to %(new_status)s"
+    )
+    STATUS_UPDATE_SUCCESS = _("Order status updated successfully")
+    REQUIRED_QUANTITY = _("Quantity must be greater than 0")
+    CONTAIN_ONE_ITEM = _("Order must contain at least one item")
+    ITEM_BELONGS_TO_ONE_RESTAURANT = ("All items must belong to the selected restaurant")
+    MENU_ITEM_UNAVAILABLE = _(
+        "'%(item_name)s' is currently unavailable"
+    )
+    MINIMUM_ORDER_NOT_MET = _(
+        "Order total must meet the restaurant's minimum order of %(minimum_order)s"
+    )
+    
+    #Review
+    
+    RATING_VALIDATION = _("Rating must be between 1 and 5")
+    REVIEW_OWN_ORDER = _("You can only review your own order")
+    REVIEW_DELIVERED_ORDER = _("Order must be delivered to review")

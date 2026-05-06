@@ -175,6 +175,8 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate_new_password(self, value):
         """Apply Django's password validation rules."""
         try:
+            # Initial validation without user context
+            # Full validation with user context happens in validate() method
             validate_password(value)
         except Exception as e:
             raise serializers.ValidationError(
@@ -216,6 +218,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         new_password = self.validated_data["new_password"]
 
         logger.info("Password change attempt")
+        self.validate_new_password(new_password)
         user.set_password(new_password)
         user.save()
 

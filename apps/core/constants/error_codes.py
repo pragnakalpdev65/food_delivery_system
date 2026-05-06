@@ -18,5 +18,13 @@ class ErrorCodes:
 
     REQUEST_EXPIRED = "request_expired"
     NOT_FOUND = 404
-
+    
+    #order
+    
+    INVALID_TRANSITIONS = "invalid_transition" 
+    MUST_BE_READY = "must_be_ready_state"
+    ALREADY_ASSIGNED = "already_assigned"
+    DRIVER_NOT_FOUND = "driver_profile_not_found"
+    DRIVER_REQUIRED = "driver_required"
+    CAN_NOT_BE_CANCELLED = "can_not_be_cancelled"
 

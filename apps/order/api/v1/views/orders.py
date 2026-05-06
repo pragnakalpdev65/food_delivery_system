@@ -17,17 +17,21 @@ from apps.permissions.order_permissions import (
 )
 from django.core.cache import cache
 from apps.core.constants.cache_keys import CacheKey
+from apps.core.constants.messages import AuthMessages
+from apps.core.constants.error_codes import ErrorCodes
 from apps.users.models import CustomUser
 from drf_spectacular.utils import extend_schema, OpenApiExample
+from apps.core.constants.status import OrderStatus
+
 
 VALID_TRANSITIONS = {
-    "PENDING": ["CONFIRMED", "CANCELLED"],
-    "CONFIRMED": ["PREPARING", "CANCELLED"],
-    "PREPARING": ["READY"],
-    "READY": ["PICKED_UP"],
-    "PICKED_UP": ["DELIVERED"],
-    "DELIVERED": [],
-    "CANCELLED": [],
+    OrderStatus.PENDING: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
+    OrderStatus.CONFIRMED: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
+    OrderStatus.PREPARING: [OrderStatus.READY],
+    OrderStatus.READY: [OrderStatus.PICKED_UP],
+    OrderStatus.PICKED_UP: [OrderStatus.DELIVERED],
+    OrderStatus.DELIVERED: [],
+    OrderStatus.CANCELLED: [],
 }
 
 @extend_schema(
@@ -75,23 +79,23 @@ class OrderViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        user_type = (user.user_type or "").strip().lower().replace(" ", "_")
         queryset = Order.objects.select_related(
             'customer', 'restaurant', 'driver'
         ).prefetch_related(
             'items', 'items__menu_item'
         )
 
-        if (user.user_type == "CUSTOMER" or user.user_type == "customer"):
-           
+        if user_type == "customer":
             return queryset.filter(customer=user)
 
-        if user.user_type == "RESTAURANT_OWNER":
+        if user_type == "restaurant_owner":
             return queryset.filter(restaurant__owner=user)
 
-        if user.user_type == "DRIVER":
+        if user_type in ("driver", "delivery_driver"):
             return (
                 queryset.filter(driver=user)
-                | queryset.filter(status__in=["READY", "PENDING", "CONFIRMED"])
+                | queryset.filter(status__in=[OrderStatus.READY, OrderStatus.PENDING,OrderStatus.CONFIRMED])
             )
 
         return queryset.none()
@@ -118,20 +122,21 @@ class OrderViewSet(ModelViewSet):
     def cancel(self, request, pk=None):
         order = self.get_object()
 
-        if order.status == "CANCELLED":
-            return Response({"message": "Order is already cancelled"})
+        if order.status == OrderStatus.CANCELLED:
+            return Response({"message": AuthMessages.ALREADY_CANCELLED})
 
         else :
-            if order.status not in ["pending", "confirmed","PENDING","CONFIRMED"]:
+            if order.status not in [OrderStatus.PENDING, OrderStatus.CONFIRMED]:                
                 return Response(
-                    {"error": "Order cannot be cancelled at this stage"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"error": AuthMessages.CAN_NOT_BE_CANCELLED,
+                    "code" : ErrorCodes.CAN_NOT_BE_CANCELLED},
+                   
                 )
 
-            order.status = "CANCELLED"
+            order.status = OrderStatus.CANCELLED
             order.save()
 
-            return Response({"message": "Order cancelled successfully"})
+            return Response({"message": AuthMessages.CANCELLED_SUCCESS})
             
 
     @action(detail=True, methods=['post'])
@@ -141,35 +146,42 @@ class OrderViewSet(ModelViewSet):
 
         if not driver_id:
             return Response(
-                {"error": "driver_id is required"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error":AuthMessages.DRIVER_REQUIRED,
+                  "code" : ErrorCodes.DRIVER_REQUIRED},
+               
             )
 
-        try:
-            driver = CustomUser.objects.get(id=driver_id, user_type="DRIVER")
-        except CustomUser.DoesNotExist:
+        driver = CustomUser.objects.filter(id=driver_id).first()
+        normalized_driver_type = (
+            driver.user_type.strip().lower().replace(" ", "_")
+        ) if driver else None
+
+        if not driver or normalized_driver_type not in ("driver", "delivery_driver"):
             return Response(
-                {"error": "Invalid driver"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error":AuthMessages.DRIVER_NOT_FOUND,
+                 "code" : ErrorCodes.DRIVER_NOT_FOUND},
+                
             )
 
         if order.driver:
             return Response(
-                {"error": "Driver already assigned"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": AuthMessages.ALREADY_ASSIGNED,
+                 "code" : ErrorCodes.ALREADY_ASSIGNED},
+                
             )
 
-        if order.status != "READY":
+        if order.status != OrderStatus.READY:           
             return Response(
-                {"error": "Order must be READY before assigning driver"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": AuthMessages.MUST_BE_READY,
+                  "code" : ErrorCodes.MUST_BE_READY},
+               
             )
 
         order.driver = driver
-        order.status = "PICKED_UP"
+        order.status = OrderStatus.PICKED_UP
         order.save()
 
-        return Response({"message": "Driver assigned successfully"})
+        return Response({"message":AuthMessages.ASSIGN_SUCCESS })
     
     @action(detail=True, methods=['post'])
     def update_status(self, request, pk=None):
@@ -178,7 +190,7 @@ class OrderViewSet(ModelViewSet):
 
         if not new_status:
             return Response(
-                {"error": "Status is required"},
+                {"error":AuthMessages.STATUS_REQUIRED },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -189,9 +201,13 @@ class OrderViewSet(ModelViewSet):
         if new_status not in allowed:
             return Response(
                 {
-                    "error": f"Invalid transition from {current_status} to {new_status}"
+                    "error": AuthMessages.INVALID_TRANSITION % {
+                                "current_status": current_status,
+                                "new_status": new_status,
+                                },
+                    "code" : ErrorCodes.INVALID_TRANSITIONS
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                
             )
 
         order.status = new_status
@@ -199,7 +215,7 @@ class OrderViewSet(ModelViewSet):
 
         return Response(
             {
-                "message": "Order status updated successfully",
+                "message": AuthMessages.STATUS_UPDATE_SUCCESS,
                 "status": order.status
             }
         )

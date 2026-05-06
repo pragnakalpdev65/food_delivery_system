@@ -6,6 +6,7 @@ from apps.order.models.order import OrderItem
 from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta
+from apps.core.constants.messages import AuthMessages
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -15,7 +16,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     def validate_quantity(self, value):
         if value <= 0:
-            raise serializers.ValidationError("Quantity must be greater than 0")
+            raise serializers.ValidationError(AuthMessages.REQUIRED_QUANTITY)
         return value
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -31,17 +32,19 @@ class OrderSerializer(serializers.ModelSerializer):
         restaurant = data.get('restaurant')
 
         if not items:
-            raise serializers.ValidationError("Order must contain at least one item")
+            raise serializers.ValidationError(AuthMessages.CONTAIN_ONE_ITEM)
 
         for item in items:
             menu_item = item['menu_item']
             if menu_item.restaurant != restaurant:
-                raise serializers.ValidationError(
-                    "All items must belong to the selected restaurant"
+                raise serializers.ValidationError(AuthMessages.ITEM_BELONGS_TO_ONE_RESTAURANT
+                    
                 )
             if not menu_item.is_available:
                 raise serializers.ValidationError(
-                    f"'{menu_item.name}' is currently unavailable"
+                        AuthMessages.MENU_ITEM_UNAVAILABLE % {
+                        "item_name": menu_item.name
+                    }
                 )
         return data
 
@@ -84,8 +87,10 @@ class OrderSerializer(serializers.ModelSerializer):
 
         if order.subtotal < order.restaurant.minimum_order:
             raise serializers.ValidationError(
-                f"Order total must meet the restaurant's minimum order of {order.restaurant.minimum_order}"
-            )
+                AuthMessages.MINIMUM_ORDER_NOT_MET % {
+                    "minimum_order": order.restaurant.minimum_order
+                }        
+                )
 
         order.save()
         return order

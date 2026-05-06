@@ -5,24 +5,15 @@ from apps.restaurant.models.restaurant import Restaurant
 from apps.restaurant.models.menu import MenuItem
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
+from apps.core.constants.status import OrderStatus
 
 class Order(TimestampedModel,UUIDModel):
-    
-    STATUS_TYPES=(
-        ('pending','Pending'),
-        ('confirmed','Confirmed'),
-        ('preparing','Preparing'),
-        ('ready','Ready'),
-        ('picked_up','Picked Up'),
-        ('delivered','Delivered'),
-        ('cancelled','Cancelled'),
-    )
     
     customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name="orders")
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE,related_name="orders")
     driver = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, related_name="driver_orders", null=True)
     order_number = models.PositiveIntegerField(unique=True, auto_created=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_TYPES, default="pending", db_index=True)
+    status = models.CharField(max_length=20,choices=OrderStatus.choices,default=OrderStatus.PENDING,db_index=True)    
     delivery_address = models.TextField()
     subtotal = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     delivery_fee = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
@@ -33,11 +24,11 @@ class Order(TimestampedModel,UUIDModel):
     actual_delivery_time = models.DateTimeField(null=True)
 
     def can_cancel(self):
-        return self.status in ['pending', 'confirmed']
+        return self.status in [OrderStatus.PENDING, OrderStatus.CONFIRMED]
 
     def is_delivered(self):
-        return self.status == 'delivered'
-    
+        return self.status == OrderStatus.DELIVERED
+
     def items_count(self):
         return self.items.count()
 
