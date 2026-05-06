@@ -12,6 +12,7 @@ from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
     OutstandingToken,
 )
+from django.core.exceptions import ValidationError
 
 
 User = get_user_model()
@@ -107,10 +108,10 @@ class ResetPasswordConfirmSerializer(serializers.Serializer):
 
         try:
             validate_password(value)
-        except Exception as e:
+        except ValidationError:
             logger.warning("Password validation failed")
             raise serializers.ValidationError(
-                str(e),
+                AuthMessages.INVALID_PASSWORD,
                 code=ErrorCodes.INVALID_PASSWORD,
             )
 

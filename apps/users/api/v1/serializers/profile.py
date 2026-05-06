@@ -18,6 +18,7 @@ from apps.users.services.email_services import AuthEmailService
 from django.core import signing
 from django.core.cache import cache
 from django.core.signing import BadSignature, SignatureExpired
+from django.core.exceptions import ValidationError
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -178,9 +179,9 @@ class ChangePasswordSerializer(serializers.Serializer):
             # Initial validation without user context
             # Full validation with user context happens in validate() method
             validate_password(value)
-        except Exception as e:
+        except ValidationError:
             raise serializers.ValidationError(
-                str(e), code=ErrorCodes.INVALID_PASSWORD
+                AuthMessages.INVALID_PASSWORD, code=ErrorCodes.INVALID_PASSWORD
             ) from e
         return value
 
