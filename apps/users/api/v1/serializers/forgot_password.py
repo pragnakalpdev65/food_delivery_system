@@ -142,6 +142,15 @@ class ResetPasswordConfirmSerializer(serializers.Serializer):
                 AuthMessages.USER_NOT_FOUND,
                 code=ErrorCodes.USER_NOT_FOUND,
             )
+            
+        try:
+            validate_password(new_password, user=user)
+        except Exception as e:
+            logger.warning("Password validation failed during context check")
+            raise serializers.ValidationError(
+                str(e),
+                code=ErrorCodes.INVALID_PASSWORD,
+            )            
 
         self.user = user
         return attrs
