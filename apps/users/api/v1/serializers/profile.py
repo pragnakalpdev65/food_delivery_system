@@ -182,7 +182,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         except ValidationError:
             raise serializers.ValidationError(
                 AuthMessages.INVALID_PASSWORD, code=ErrorCodes.INVALID_PASSWORD
-            ) from e
+            )
         return value
 
     def validate(self, attrs):
