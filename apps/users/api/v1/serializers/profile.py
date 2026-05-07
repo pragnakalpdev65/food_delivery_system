@@ -59,6 +59,7 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
             "loyalty_points",
             "addresses",
         ]
+        read_only_fields = ["id", "user", "total_orders", "loyalty_points", "addresses"]
 
 class DriverProfileSerializer(serializers.ModelSerializer):
     """
@@ -98,7 +99,6 @@ class CustomerProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerProfile
         fields = ["avatar", "default_address", "addresses"]
-        
         
     def update(self, instance, validated_data):
         addresses_data = validated_data.pop("addresses", None)

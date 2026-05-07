@@ -61,8 +61,8 @@ class TestLoginAPI:
         url = reverse("login")
         payload = {}
         response = api_client.post(url, payload, format="json")
-        assert response.data["username"][0] == "This field is required."
-        assert response.data["password"][0] == "This field is required."
+        assert response.data["errors"]["username"][0] == "This field is required."
+        assert response.data["errors"]["password"][0] == "This field is required."
 
 
     def test_invalid_credentials(self, api_client, user):
@@ -75,7 +75,7 @@ class TestLoginAPI:
         }
         response = api_client.post(url, payload, format="json")
         assert response.status_code == 401
-        assert response.data["detail"] == "Invalid email or password."
+        assert response.data["message"] == "Invalid email or password."
 
     def test_unverified_user_blocked(self, api_client):
         """Users with unverified email should not be allowed to login."""
@@ -95,7 +95,7 @@ class TestLoginAPI:
             "password": "securepass123!",
         }
         response = api_client.post(url, payload, format="json")
-        assert response.data["detail"] == "Email not verified"
+        assert response.data["message"] == "Email not verified"
         assert response.status_code == 403
 
     def test_account_lock_after_max_attempts(self, api_client, user):
@@ -115,7 +115,7 @@ class TestLoginAPI:
         response = api_client.post(url, payload, format="json")
         
         assert response.status_code == 403
-        assert "Account locked" in response.data["detail"]
+        assert "Account locked" in response.data["message"]
 
     def test_locked_user_cannot_login(self, api_client, user):
         """If user is already locked, login should immediately fail."""
@@ -129,7 +129,7 @@ class TestLoginAPI:
         }
         response = api_client.post(url, payload, format="json")
         assert response.status_code == 403
-        assert "Account locked" in response.data["detail"]
+        assert "Account locked" in response.data["message"]
 
 
 # =========================================================
@@ -154,7 +154,7 @@ class TestLogoutAPI:
 
         # Reusing same token should fail because it is now blacklisted
         response = api_client.post(url, payload, format="json")
-        assert "Invalid token." in response.data["detail"]
+        assert "Invalid token." in response.data["message"]
 
     def test_logout_without_token(self, api_client, user):
         """Logout should fail if refresh token is missing."""
@@ -168,7 +168,7 @@ class TestLogoutAPI:
         )  # Send request without refresh token
 
         assert (
-            response.data["refresh_token"][0] == "This field is required."
+            response.data["errors"]["refresh_token"][0] == "This field is required."
         )  # API should reject request due to missing token
 
     def test_logout_invalid_token(self, api_client, user):
@@ -181,5 +181,6 @@ class TestLogoutAPI:
         payload = {"refresh_token": "invalidtoken"}  # intentionally malformed
 
         response = api_client.post(url, payload, format="json")
+        print(response.data)
         # API should reject invalid token format
-        assert "Invalid token." in response.data["detail"]
+        assert "Invalid token." in response.data["message"]

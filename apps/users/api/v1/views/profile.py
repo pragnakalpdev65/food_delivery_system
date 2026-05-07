@@ -107,8 +107,8 @@ class AddressView(APIView):
             200 OK with list of addresses.
         """
         profile = request.user.customer_profile
-        addresses = profile.addresses.all()
-
+        addresses = profile.addresses.select_related("customer").all()
+    
         serializer = AddressSerializer(addresses, many=True)
         return Response(serializer.data)
 
@@ -150,9 +150,12 @@ class AddressDetailView(APIView):
             Address instance if found, otherwise None.
         """
         try:
-            return Address.objects.get(pk=pk, customer=request.user.customer_profile)
+            address = Address.objects.get(pk=pk, customer=request.user.customer_profile)
         except Address.DoesNotExist:
             return None
+
+        self.check_object_permissions(request, address)
+        return address
 
     def get(self, request, pk):
         """

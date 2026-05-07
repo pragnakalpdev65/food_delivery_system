@@ -13,6 +13,39 @@ from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+
+class UserRegistrationResponseSerializer(serializers.ModelSerializer):
+    """
+    Read-only serializer for user registration response.
+    
+    This serializer is used ONLY for responses after successful registration.
+    It excludes all sensitive fields like password and internal flags.
+    
+    Exposed fields:
+    - id: User's unique identifier
+    - email: User's email address
+    - username: User's username
+    - first_name: User's first name
+    - last_name: User's last name
+    - user_type: Type of user (customer, restaurant_owner, delivery_driver)
+    - is_verified: Email verification status
+    """
+    
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "user_type",
+            "is_verified",
+        ]
+        read_only_fields = fields
+
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """
     Serializer responsible for handling user registration.

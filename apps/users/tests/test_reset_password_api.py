@@ -67,7 +67,7 @@ class TestResetPasswordRequestAPI:
         url = reverse("reset_password_request")
         response = api_client.post(url, {"email": "usermissing@test.com"})
         assert response.status_code == 400
-        assert "User not found" in response.data["email"][0]
+        assert "User not found" in response.data["errors"]["email"][0]
 
 @pytest.mark.django_db
 class TestResetPasswordConfirmAPI:
@@ -78,7 +78,7 @@ class TestResetPasswordConfirmAPI:
         response = api_client.post(url, {"token": "invalid token"})
         assert response.status_code == 400
 
-        assert "Invalid token" in response.data["token"][0]
+        assert "Invalid token" in response.data["errors"]["token"][0]
 
     def test_expired_token(self, api_client):
         """Ensure expired token is rejected."""

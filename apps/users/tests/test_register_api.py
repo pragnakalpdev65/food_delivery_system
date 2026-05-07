@@ -51,7 +51,7 @@ class TestUserRegistrationAPI:
         }
         response = api_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "email" in response.data
+        assert "email" in response.data["errors"]
         
     def test_username_uniqueness_validation(self, api_client):
         """Registration should fail if email already exists."""
@@ -72,7 +72,7 @@ class TestUserRegistrationAPI:
         }
         response = api_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "username" in response.data
+        assert "username" in response.data["errors"]
 
     def test_password_validation(self, api_client):
         """Registration fail if password does not match strength rules."""
