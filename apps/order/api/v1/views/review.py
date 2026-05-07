@@ -1,7 +1,5 @@
-from rest_framework.views import View,APIView
 from apps.order.api.v1.serializers.review import ReviewSerializer
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from common.api.pagination import ReviewPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter

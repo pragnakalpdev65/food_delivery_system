@@ -25,7 +25,7 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ['id','restaurant','delivery_address','items','subtotal','delivery_fee','tax','total_amount','status','created_at']
-        read_only_fields = ['subtotal','delivery_fee','tax','total_amount','status','created_at']
+        read_only_fields = ['id','subtotal','delivery_fee','tax','total_amount','status','created_at']
 
     def validate(self, data):
         items = data.get('items')

@@ -17,7 +17,7 @@ from apps.restaurant.models.menu import MenuItem
 
 from apps.restaurant.api.v1.serializers.restaurant import (
     RestaurantSerializer,
-    RestaurantDetailsSerializer,
+    RestaurantDetailSerializer,
     RestaurantListSerializer
 )
 from apps.restaurant.api.v1.serializers.menu import MenuItemSerializer
@@ -42,7 +42,7 @@ from apps.restaurant.services.cache_services import RestaurantCacheService
     ),
     retrieve=extend_schema(
         description="Get restaurant details",
-        responses=RestaurantDetailsSerializer,
+        responses=RestaurantDetailSerializer,
         tags=["Restaurants"],
     ),
     create=extend_schema(
@@ -82,7 +82,7 @@ class RestaurantViewSet(ModelViewSet):
         if self.action == "list":
             return RestaurantListSerializer
         elif self.action == "retrieve":
-            return RestaurantDetailsSerializer
+            return RestaurantDetailSerializer
         return RestaurantSerializer
 
     def list(self, request, *args, **kwargs):
