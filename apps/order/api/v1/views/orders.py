@@ -4,7 +4,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Prefetch
 from rest_framework.filters import SearchFilter, OrderingFilter
 from apps.order.models.order import Order
 from apps.order.api.v1.serializers.orders import OrderSerializer
@@ -16,9 +15,9 @@ from apps.permissions.order_permissions import (
     IsRestaurantOwnerOrDriver,
 )
 from django.core.cache import cache
-from apps.core.constants.cache_keys import CacheKey
 from apps.core.constants.messages import AuthMessages
 from apps.core.constants.error_codes import ErrorCodes
+from apps.core.constants.user_types import UserType
 from apps.users.models import CustomUser
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from apps.core.constants.status import OrderStatus
@@ -79,20 +78,20 @@ class OrderViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        user_type = (user.user_type or "").strip().lower().replace(" ", "_")
+        user_type = user.user_type
         queryset = Order.objects.select_related(
             'customer', 'restaurant', 'driver'
         ).prefetch_related(
             'items', 'items__menu_item'
         )
 
-        if user_type == "customer":
+        if user_type == UserType.CUSTOMER:
             return queryset.filter(customer=user)
 
-        if user_type == "restaurant_owner":
+        if user_type == UserType.RESTAURANT_OWNER:
             return queryset.filter(restaurant__owner=user)
 
-        if user_type in ("driver", "delivery_driver"):
+        if user_type == UserType.DELIVERY_DRIVER:
             return (
                 queryset.filter(driver=user)
                 | queryset.filter(status__in=[OrderStatus.READY, OrderStatus.PENDING,OrderStatus.CONFIRMED])
@@ -223,7 +222,6 @@ class OrderViewSet(ModelViewSet):
     @action(detail=True, methods=['get'])
     def eta(self, request, pk=None):
         order = self.get_object()
-        print(order)
         if not order.created_at:
             return Response({"error": AuthMessages.INVALID_ORDER}, status=400)
 

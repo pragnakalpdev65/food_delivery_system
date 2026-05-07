@@ -3,7 +3,7 @@ from apps.core.constants.cache_keys import CacheKey
 from apps.restaurant.models.restaurant import Restaurant
 from apps.restaurant.api.v1.serializers.restaurant import (
     RestaurantListSerializer,
-    RestaurantDetailsSerializer
+    RestaurantDetailSerializer
 )
 from apps.restaurant.models.menu import MenuItem
 from apps.restaurant.api.v1.serializers.menu import MenuItemSerializer
@@ -30,7 +30,7 @@ class RestaurantCacheService:
         if data:
             return data
 
-        data = RestaurantDetailsSerializer(restaurant).data
+        data = RestaurantDetailSerializer(restaurant).data
         cache.set(cache_key, data, timeout=60 * 10)
         return data
 

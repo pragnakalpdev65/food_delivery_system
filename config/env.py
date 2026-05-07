@@ -1,8 +1,9 @@
     # Individual DB fields (PostgreSQL preferred)
 from pydantic_settings import BaseSettings,SettingsConfigDict
-from typing import Optional, List
+from typing import Any, List, Optional, Union
 import sys
 from functools import lru_cache
+from pydantic import field_validator
 
 
 class EnvSettings(BaseSettings):
@@ -15,8 +16,9 @@ class EnvSettings(BaseSettings):
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
     
-    
- 
+    DEBUG: bool = False
+    SECRET_KEY: str
+
     # =============================================================================
     # EMAIL
     # =============================================================================
@@ -31,6 +33,30 @@ class EnvSettings(BaseSettings):
     SITE_BASE_URL: str = "http://localhost:8000"   
     
 
+
+    # Logging Configuration
+    USE_JSON_LOGGING: bool = False
+
+    # Allowed host
+    ALLOWED_HOSTS: Union[List[str], str] = ["*"]
+
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
+    def parse_allowed_hosts(cls, v: Any) -> List[str]:
+        """Convert comma-separated string to list."""
+        if isinstance(v, str):
+            if not v:
+                return []
+            # Handle cases like "localhost, 127.0.0.1" or "['*']"
+            if v.startswith("[") and v.endswith("]"):
+                import ast
+
+                try:
+                    return ast.literal_eval(v)
+                except (ValueError, SyntaxError):
+                    pass
+            return [host.strip() for host in v.split(",") if host.strip()]
+        return v
     
 @lru_cache
 def get_settings() -> EnvSettings:

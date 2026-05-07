@@ -1,5 +1,6 @@
 from rest_framework.pagination import PageNumberPagination, CursorPagination, LimitOffsetPagination
-
+class StandardPagination(PageNumberPagination): 
+    page_size = 10
 
 class RestaurantPagination(PageNumberPagination):
     page_size = 20

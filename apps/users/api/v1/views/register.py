@@ -1,4 +1,4 @@
-from apps.users.api.v1.serializers.register import UserRegistrationSerializer, VerifyEmailSerializer, ResendVerificationSerializer
+from apps.users.api.v1.serializers.register import UserRegistrationSerializer, UserRegistrationResponseSerializer, VerifyEmailSerializer, ResendVerificationSerializer
 import logging
 
 from rest_framework import status
@@ -34,7 +34,7 @@ class UserRegistrationView(APIView):
     - Validate input using serializer
     - Create new user record
     - Send verification email
-    - Return success response
+    - Return success response with sanitized user data
 
     This endpoint is public and does not require authentication.
     """
@@ -45,6 +45,10 @@ class UserRegistrationView(APIView):
     def post(self, request):
         """
         Register a new user and send verification email.
+        
+        Uses UserRegistrationSerializer for input validation and user creation,
+        then returns response using UserRegistrationResponseSerializer to 
+        exclude sensitive fields.
         """
         serializer = UserRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -58,7 +62,9 @@ class UserRegistrationView(APIView):
                                 context_key="verification_url",
                             ) # Send email verification link via service layer
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # Return sanitized response excluding sensitive fields
+        response_serializer = UserRegistrationResponseSerializer(user)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 class VerifyEmailView(APIView):
     """

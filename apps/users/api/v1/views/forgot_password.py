@@ -9,6 +9,7 @@ from apps.users.api.v1.serializers.forgot_password import (
     ResetPasswordConfirmSerializer
 )
 from django.contrib.auth import get_user_model
+from rest_framework.throttling import ScopedRateThrottle
 
 User = get_user_model()
 
@@ -23,6 +24,8 @@ class ResetPasswordRequestView(APIView):
     """
 
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "reset_password"
 
     def post(self, request):
         """Handle password reset email request."""

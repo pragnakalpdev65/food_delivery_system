@@ -6,6 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import CustomerProfile, DriverProfile
 from apps.order.models.order import Order, Review, OrderItem
+from apps.core.constants.user_types import UserType
 
 User=get_user_model()
 logger = logging.getLogger(__name__)
@@ -14,10 +15,10 @@ logger = logging.getLogger(__name__)
 @transaction.atomic()
 def create_profile(sender,instance, created, **kwargs):
     if created:
-        if instance.user_type == "customer":
+        if instance.user_type == UserType.CUSTOMER:
             CustomerProfile.objects.create(user=instance)
 
-        if instance.user_type == "delivery_driver":
+        if instance.user_type == UserType.DELIVERY_DRIVER:
             DriverProfile.objects.create(user=instance)         
 
 @receiver(post_save, sender=Order)

@@ -7,6 +7,7 @@ from apps.restaurant.models.restaurant import Restaurant
 from apps.restaurant.models.menu import MenuItem
 from apps.order.models.order import Order
 from apps.core.constants.status import OrderStatus
+from apps.core.constants.user_types import UserType
 
 
 @pytest.fixture
@@ -19,7 +20,7 @@ def customer(db):
         username="customer",
         email="customer@example.com",  
         password="pass123",
-        user_type="CUSTOMER"
+        user_type=UserType.CUSTOMER
     )
 
 @pytest.fixture
@@ -28,7 +29,7 @@ def owner(db):
         username="owner",
         email="owner@example.com",     
         password="pass123",
-        user_type="RESTAURANT_OWNER"
+        user_type=UserType.RESTAURANT_OWNER
     )
 
 @pytest.fixture
@@ -37,7 +38,7 @@ def driver(db):
         username="driver",
         email="driver@example.com",    
         password="pass123",
-        user_type="DRIVER"
+        user_type=UserType.DELIVERY_DRIVER
     )
 
 @pytest.fixture
@@ -78,7 +79,6 @@ class TestOrderAPI:
         url = reverse('orders-update-status', args=[order.id])
 
         response = client.post(url, {"status": OrderStatus.CONFIRMED}, format='json')
-        print(response.data)
         assert response.status_code == 200
         order.refresh_from_db()
         assert order.status == OrderStatus.CONFIRMED

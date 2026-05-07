@@ -128,7 +128,7 @@ class TestEmailFlow:
         response = api_client.get(url, {"token": "invalid token"})
         
         assert response.status_code == 400
-        assert "Invalid token." in response.data["token"][0]
+        assert "Invalid token." in response.data["errors"]["token"][0]
 
     def test_verify_email_expired_token(self, api_client):
         """Ensure expired token is rejected."""
@@ -164,16 +164,15 @@ class TestResendEmail:
         response = api_client.post(url, {"email": "usermissing@test.com"})
         
         assert response.status_code == 400
-        assert "User not found" in response.data["email"][0]
+        assert "User not found" in response.data["errors"]["email"][0]
 
     def test_resend_email_already_verified(self, api_client):
         """Ensure resend blocked for verified user."""
         user = User.objects.create(email="test@test.com", is_verified=True)
         url = reverse("resend-verification")
         response = api_client.post(url, {"email": user.email})
-
         assert response.status_code == 400
-        assert "Account already verified" in response.data["email"][0]
+        assert "Account already verified" in response.data["errors"]["email"][0]
 
 
 # =========================================================

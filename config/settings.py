@@ -11,10 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-
+from datetime import timedelta
 from config.env import env
 import dj_database_url
 import os
+import sys
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,12 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+c6@^fc3$hy-$h26=3h0f138bd%($57$0f@xry(soy^rp-nrc1'
+SECRET_KEY = env.SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.DEBUG
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.ALLOWED_HOSTS
 
 # Application definition
 INSTALLED_APPS = [
@@ -94,16 +95,17 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    
-    # # Permissions: Require authentication by default
-    # "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    # # Schema: Use drf-spectacular for OpenAPI
-    # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # Pagination: Use our custom pagination class
-    # "DEFAULT_PAGINATION_CLASS": "common.api.pagination.StandardPagination",
-    # "PAGE_SIZE": 20,
-    # # Exception handling: Use our centralized handler for consistent JSON responses
-    # "EXCEPTION_HANDLER": "common.api.exceptions.standardized_exception_handler",
+    # Renderers: disable the browsable API in production
+    "DEFAULT_RENDERER_CLASSES": (
+        "rest_framework.renderers.JSONRenderer",
+    ),
+    # Schema: Use drf-spectacular for OpenAPI
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # # Pagination: Use our custom pagination class
+    "DEFAULT_PAGINATION_CLASS": "common.api.pagination.StandardPagination",
+    "PAGE_SIZE": 20,
+    # Exception handling: Use our centralized handler for consistent JSON responses
+    "EXCEPTION_HANDLER": "common.api.exceptions.standardized_exception_handler",
     # Throttling: Limit API requests to prevent abuse
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",  # Anonymous users
@@ -111,13 +113,13 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.ScopedRateThrottle",  # Per-endpoint limits
     ],
     
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     # Throttle rates
     "DEFAULT_THROTTLE_RATES": {
         "anon": "100/hour",  # Anonymous requests
         "user": "1000/hour",  # Authenticated requests
         "resend_email": "1/minute",  # Resend email
         "login": "5/minute",  # Login
+        "reset_password": "5/day",
         "Order creation": "20/hour",
         "Review creation": "10/hour",
         "Location updates": "500/hour", #(for drivers)
@@ -126,7 +128,16 @@ REST_FRAMEWORK = {
     # Filtration
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend"
-    ]
+    ],
+    
+    # 1. Set the versioning class 
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
+    # 2. Set the default version
+    'DEFAULT_VERSION': 'v1',
+    # 3. Allow only specific versions
+    'ALLOWED_VERSIONS': ['v1', 'v2'],
+    # 4. Version parameter name
+    'VERSION_PARAM': 'version',
 }
 
 
@@ -263,5 +274,79 @@ SPECTACULAR_SETTINGS = {
                 "bearerFormat": "JWT",
             }
         }
+    },
+}
+
+
+# =============================================================================
+# SIMPLE JWT CONFIGURATION
+# =============================================================================
+
+SIMPLE_JWT = {
+    # Token Lifetimes
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    # Token Rotation
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    # Algorithm
+    "ALGORITHM": "HS256",
+    # Headers
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+}
+
+# =============================================================================
+# HTTPS / SSL SECURITY
+# =============================================================================
+
+# Redirect all HTTP requests to HTTPS 
+SECURE_SSL_REDIRECT = not DEBUG
+
+# Use secure cookies (only sent over HTTPS)
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# HTTP Strict Transport Security (HSTS)
+# Tells browsers to only use HTTPS for this domain
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+
+# Production logging - focus on warnings and errors
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "format": '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "module": "%(module)s", "message": "%(message)s"}',
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
     },
 }
