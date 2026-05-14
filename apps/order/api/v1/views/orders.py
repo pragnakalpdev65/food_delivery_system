@@ -7,6 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from apps.order.models.order import Order
 from apps.order.api.v1.serializers.orders import OrderSerializer
+from apps.order.api.v1.serializers.reorder import ReorderSerializer
 from apps.permissions.order_permissions import (
     IsCustomer,
     IsDriver,
@@ -17,11 +18,13 @@ from apps.permissions.order_permissions import (
 from django.core.cache import cache
 from apps.core.constants.messages import AuthMessages
 from apps.core.constants.error_codes import ErrorCodes
-from apps.core.constants.user_types import UserType
+from apps.core.constants.choices import UserType
 from apps.users.models import CustomUser
 from drf_spectacular.utils import extend_schema, OpenApiExample
-from apps.core.constants.status import OrderStatus
-
+from apps.core.constants.choices import OrderStatus
+from common.api.filters.order_filters import OrderFilter
+from django.utils import timezone
+from apps.order.api.v1.serializers.order_stats import OrderStatsSerializer
 
 VALID_TRANSITIONS = {
     OrderStatus.PENDING: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
@@ -51,10 +54,13 @@ Events:
 class OrderViewSet(ModelViewSet):
     serializer_class = OrderSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['status', 'restaurant']
-    search_fields = ['order_number']
-    ordering_fields = ['-created_at', 'total_amount']
+    filterset_class = OrderFilter
 
+    search_fields = ['order_number','restaurant__name']
+
+    ordering_fields = ['created_at','total_amount','status']
+
+    ordering = ['-created_at']
     @extend_schema(
         description="Create a new order (Customer only)",
         request=OrderSerializer,
@@ -210,6 +216,9 @@ class OrderViewSet(ModelViewSet):
             )
 
         order.status = new_status
+        
+        if new_status == OrderStatus.DELIVERED:
+            order.actual_delivery_time = timezone.now()
         order.save()
 
         return Response(
@@ -230,3 +239,36 @@ class OrderViewSet(ModelViewSet):
         return Response({
             "estimated_delivery_time": eta
         })
+    
+    @extend_schema(
+        description="Reorder from a previous order",
+        responses=ReorderSerializer
+    )
+    @action(detail=True, methods=['post'])
+    def reorder(self, request, pk=None):
+        original_order = self.get_object()
+
+        serializer = ReorderSerializer(
+            data={},
+            context={
+                "request": request,
+                "order": original_order
+            }
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        order_data = serializer.save()
+
+        return Response(
+            order_data,
+            status=status.HTTP_201_CREATED
+        )
+         
+    @action(detail=False, methods=["get"])
+    def order_stats(self, request):
+        serializer = OrderStatsSerializer(
+            instance={}, 
+            context={"request": request}
+        )
+        return Response(serializer.data)

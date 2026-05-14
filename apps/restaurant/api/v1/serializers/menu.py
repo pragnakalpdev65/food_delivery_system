@@ -2,15 +2,32 @@ from rest_framework import serializers
 from apps.restaurant.models.menu import MenuItem
 
 class MenuItemSerializer(serializers.ModelSerializer):
+    
+    is_favorited = serializers.SerializerMethodField()
+    favorite_count = serializers.IntegerField(
+        source="favorited_by.count",
+        read_only=True,
+    )
     class Meta:
         model = MenuItem
-        fields = ["restaurant", "name", "description", "price", "category", "dietary_info", "image", "is_available", "preparation_time"]    
+        fields = ["restaurant", "name", "description", "price", "category", "dietary_info", "image", "is_available", "preparation_time","is_favorited",
+            "favorite_count",]    
         
     def create(self, validated_data):
         # Permission checks are now handled by IsMenuItemOwner permission class
         # Ownership validation happens at the permission level, not in the serializer
         instance = MenuItem.objects.create(**validated_data)
         return instance
+    
+    def get_is_favorited(self, obj):
+        request = self.context.get("request")
+
+        if not request or request.user.is_anonymous:
+            return False
+
+        return obj.favorited_by.filter(
+            customer=request.user
+        ).exists()
 
 class MenuItemListSerializer(serializers.ModelSerializer):
     class Meta:

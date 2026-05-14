@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from apps.core.constants.status import OrderStatus
+from apps.core.constants.choices import OrderStatus
 from apps.order.models import Review
 from rest_framework.serializers import ValidationError   
 from apps.core.constants.messages import AuthMessages  

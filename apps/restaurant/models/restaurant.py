@@ -51,6 +51,8 @@ class Restaurant(TimestampedModel,UUIDModel):
             return now >= self.opening_time or now <= self.closing_time
 
     def update_average_rating(self):
-        avg_rating = self.reviews.aggregate(avg=Avg('rating'))['avg']
-        self.average_rating = avg_rating if avg_rating else 0
-        self.save(update_fields=['average_rating'])
+
+        average = self.reviews.aggregate(avg_rating=Avg("rating"))["avg_rating"]
+
+        self.average_rating = average or 0
+        self.save(update_fields=["average_rating"])

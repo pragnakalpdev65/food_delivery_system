@@ -12,21 +12,30 @@ from apps.core.constants.messages import AuthMessages
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
-        fields = ['menu_item', 'quantity']
+        fields = ['menu_item', 'quantity','special_instructions']
 
     def validate_quantity(self, value):
         if value <= 0:
             raise serializers.ValidationError(AuthMessages.REQUIRED_QUANTITY)
         return value
+    
+    def validate_special_instructions(self, value):
+        if value and len(value) > 200:
+            raise serializers.ValidationError("Max 200 characters allowed.")
+        return value
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, write_only=True)
-
+    delivery_instructions = serializers.CharField(required=False,allow_blank=True,max_length=500)
     class Meta:
         model = Order
-        fields = ['id','restaurant','delivery_address','items','subtotal','delivery_fee','tax','total_amount','status','created_at']
+        fields = ['id','restaurant','delivery_address','items','subtotal','delivery_fee','tax','total_amount','status','created_at', 'delivery_instructions','contact_preference','utensils_required','contactless_delivery',]
         read_only_fields = ['id','subtotal','delivery_fee','tax','total_amount','status','created_at']
 
+    def validate_delivery_instructions(self, value):
+        if value and len(value) > 500:
+            raise serializers.ValidationError("Max 500 characters allowed.")
+        return value
     def validate(self, data):
         items = data.get('items')
         restaurant = data.get('restaurant')
@@ -74,7 +83,8 @@ class OrderSerializer(serializers.ModelSerializer):
                     order=order,
                     menu_item=menu_item,
                     quantity=quantity,
-                    price=price
+                    price=price,
+                    special_instructions=item.get("special_instructions")
                 )
             )
 
@@ -102,4 +112,4 @@ class OrderSerializer(serializers.ModelSerializer):
         instance.calculate_total()
         instance.save()
 
-        return instance
+        return instance   

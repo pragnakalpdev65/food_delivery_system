@@ -3,7 +3,14 @@ from .views.register import UserRegistrationView,VerifyEmailView, ResendVerifica
 from .views.login import LoginView, LogoutView
 from .views.forgot_password import ResetPasswordRequestView, ResetPasswordConfirmView
 from .views.profile import CustomerProfileView,AddressView,AddressDetailView,DriverProfileView,ChangePasswordView,UpdateEmailView,CurrentEmailConfirmView,ConfirmEmailChangeView
-
+from apps.users.api.v1.views.favorites import (
+    FavoriteRestaurantView,
+    FavoriteRestaurantListView,
+    FavoriteRestaurantCheckView,
+    FavoriteMenuItemView,
+    FavoriteMenuItemListView,
+    FavoriteMenuItemCheckView,
+)
 
 urlpatterns = [
         path("auth/register/", UserRegistrationView.as_view(), name="register"),
@@ -21,6 +28,37 @@ urlpatterns = [
         path("profile/email/change-request/", UpdateEmailView.as_view(), name="email-change-request"),
         path("profile/email/current-confirm/", CurrentEmailConfirmView.as_view(), name="current-email-confirm"),
         path("profile/email/change-confirm/", ConfirmEmailChangeView.as_view(), name="confirm-email-change"),
+        path(
+                "favorites/restaurants/<uuid:restaurant_id>/",
+                FavoriteRestaurantView.as_view(),
+                name="favorite-restaurant-add"
+        ),
+        path(
+                "favorites/restaurants/",
+                FavoriteRestaurantListView.as_view(),
+                name = "favorite-restaurant-list"
+        ),
+        path(
+                "favorites/restaurants/check/<uuid:restaurant_id>/",
+                FavoriteRestaurantCheckView.as_view(),
+                name = "favorite-restaurant-check"
+        ),
+
+        path(
+                "favorites/menu-items/<uuid:item_id>/",
+                FavoriteMenuItemView.as_view(),
+                name="favorite-menu-item-add"
+        ),
+        path(
+                "favorites/menu-items/",
+                FavoriteMenuItemListView.as_view(),
+                name="favorite-menu-item-list"
+        ),
+        path(
+                "favorites/menu-items/check/<uuid:item_id>/",
+                FavoriteMenuItemCheckView.as_view(),
+                name="favorite-menu-item-check"
+        ),
     
 ]
 
