@@ -4,7 +4,7 @@ from rest_framework.permissions import BasePermission
 
 from apps.core.constants.error_codes import ErrorCodes
 from apps.core.constants.messages import AuthMessages
-from apps.core.constants.user_types import UserType
+from apps.core.constants.choices import UserType
 
 
 class IsCustomerOrReadOnly(BasePermission):

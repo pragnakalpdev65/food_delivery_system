@@ -44,7 +44,7 @@ class TestMenuItemAPI:
             "price": "200.00",
             "category": "main_course",
             "restaurant": str(self.restaurant.id),
-            "preparation_time": 20
+            "preparation_time": 200
         }
 
         response = api_client.post(url, payload)
@@ -106,7 +106,7 @@ class TestMenuItemAPI:
             name="Pizza",
             price="200.00",
             category="main_course",
-            preparation_time="00:20:00"
+            preparation_time=200
         )
 
         url = reverse("menuitem-list")
@@ -121,7 +121,7 @@ class TestMenuItemAPI:
             name="Pizza",
             price="200.00",
             category="main_course",
-            preparation_time="00:20:00"
+            preparation_time=200
         )
 
         url = reverse("menuitem-list") + "?category=main_course"

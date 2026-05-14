@@ -3,7 +3,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import BasePermission
 from apps.core.constants.error_codes import ErrorCodes
 from apps.core.constants.messages import AuthMessages
-from apps.core.constants.user_types import UserType
+from apps.core.constants.choices import UserType
 from apps.restaurant.models.restaurant import Restaurant
 class IsRestaurantOwner(BasePermission):
     """
@@ -49,6 +49,9 @@ class IsOwnerOrReadOnly(BasePermission):
             bool: True if the user is authenticated and is a restaurant owner, 
                   False otherwise.
         """
+        if request.method in permissions.SAFE_METHODS:
+            return request.user.is_authenticated  
+
         return (
             request.user.is_authenticated
             and request.user.user_type == UserType.RESTAURANT_OWNER

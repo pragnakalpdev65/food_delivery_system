@@ -33,7 +33,8 @@ class MenuItem(TimestampedModel,UUIDModel):
     dietary_info = models.CharField(max_length=20, choices=DIETARIES, default="none")
     image = models.ImageField(upload_to="menu_items/image/",validators=[validate_image], blank=True, null=True)
     is_available = models.BooleanField(default=True, db_index=True)
-    preparation_time = models.DurationField(help_text="Preparation time")    
+    # preparation_time = models.DurationField(help_text="Preparation time")    
+    preparation_time = models.IntegerField(help_text="Preparation time")    
     def __str__(self):
         return f"{self.name} - {self.restaurant.name}"
     

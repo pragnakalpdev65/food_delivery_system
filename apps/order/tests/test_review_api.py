@@ -49,7 +49,7 @@ class TestReviewAPI:
             name="Pizza",
             price="300.00",
             category="main_course",
-            preparation_time="00:20:00"
+            preparation_time="300"
         )
 
         self.order = Order.objects.create(
