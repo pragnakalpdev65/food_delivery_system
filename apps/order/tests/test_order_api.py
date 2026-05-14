@@ -6,8 +6,8 @@ from apps.users.models import CustomUser
 from apps.restaurant.models.restaurant import Restaurant
 from apps.restaurant.models.menu import MenuItem
 from apps.order.models.order import Order
-from apps.core.constants.status import OrderStatus
-from apps.core.constants.user_types import UserType
+from apps.core.constants.choices import OrderStatus
+from apps.core.constants.choices import UserType
 
 
 @pytest.fixture
@@ -158,6 +158,4 @@ class TestOrderAPI:
         url = reverse('orders-update-status', args=[order.id])
         response = client.post(url, {}, format='json')
 
-        assert response.status_code == 400
-        
-        
+        assert response.status_code == 400 

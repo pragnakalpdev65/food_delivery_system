@@ -6,7 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import CustomerProfile, DriverProfile
 from apps.order.models.order import Order, Review, OrderItem
-from apps.core.constants.user_types import UserType
+from apps.core.constants.choices import UserType
 
 User=get_user_model()
 logger = logging.getLogger(__name__)
