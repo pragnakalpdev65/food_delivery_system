@@ -118,8 +118,7 @@ class TestCreateOrderRating:
         url = reverse(
             "create-order-rating",
             kwargs={"order_id": delivered_order.id},
-        ) # delivered_at
-
+        )
         payload = {
             "food_quality": 5,
             "delivery_speed": 4,
@@ -130,7 +129,6 @@ class TestCreateOrderRating:
         }
 
         response = auth_client.post(url, payload, format="json")
-
         assert response.status_code == status.HTTP_201_CREATED
 
         assert response.data["food_quality"] == 5

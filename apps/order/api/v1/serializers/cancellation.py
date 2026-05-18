@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from apps.order.models.cancellation import CancellationPolicy
-
+from apps.core.constants.messages import AuthMessages
 
 class CancellationPolicySerializer(serializers.ModelSerializer):
 
@@ -15,13 +15,13 @@ class CancellationPolicySerializer(serializers.ModelSerializer):
         if full is not None and partial is not None:
             if full >= partial:
                 raise serializers.ValidationError(
-                    "Partial refund window must be greater than full refund window"
+                    AuthMessages.VALIDATE_REFUND
                 )
 
         percentage = data.get("partial_refund_percentage")
         if percentage is not None and not (0 <= percentage <= 100):
             raise serializers.ValidationError(
-                "Refund percentage must be between 0 and 100"
+                AuthMessages.VALIDATE_REFUND_PERCENTAGE
             )
 
         return data

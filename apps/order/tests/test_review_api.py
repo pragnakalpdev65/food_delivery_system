@@ -59,7 +59,7 @@ class TestReviewAPI:
             status="delivered"
         )
 
-        self.url = reverse("Review")
+        self.url = reverse("review")
 
     def test_create_review_success(self, api_client):
         api_client.force_authenticate(user=self.customer)

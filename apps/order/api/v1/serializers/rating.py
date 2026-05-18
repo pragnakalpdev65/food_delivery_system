@@ -4,8 +4,9 @@ from datetime import timedelta
 
 from apps.order.models.order import Order, OrderRating
 from apps.core.constants.choices import OrderStatus
-
-
+from apps.users.models.profile import DriverProfile
+from apps.core.constants.messages import AuthMessages
+from apps.order.services.notification_service import NotificationService
 class OrderRatingSerializer(serializers.ModelSerializer):
 
     overall_rating = serializers.ReadOnlyField()
@@ -26,11 +27,7 @@ class OrderRatingSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-        read_only_fields = [
-            "id",
-            "overall_rating",
-            "created_at",
-        ]
+        read_only_fields = ["id","overall_rating","created_at"]
 
     def validate(self, attrs):
 
@@ -41,17 +38,17 @@ class OrderRatingSerializer(serializers.ModelSerializer):
 
             if order.customer != request.user:
                 raise serializers.ValidationError(
-                    "You can only rate your own orders."
+                    AuthMessages.RATE_OWN_ORDER
                 )
 
             if order.status.lower() != OrderStatus.DELIVERED:
                 raise serializers.ValidationError(
-                    "You can only rate delivered orders."
+                    AuthMessages.RATE_DELIVERED_ORDER
                 )
 
             if not order.actual_delivery_time:
                 raise serializers.ValidationError(
-                    "Delivery time not found."
+                    AuthMessages.ACTUAL_DELIVERY_TIME_NOT_FOUND
                 )
 
             allowed_time = (
@@ -60,22 +57,21 @@ class OrderRatingSerializer(serializers.ModelSerializer):
 
             if timezone.now() > allowed_time:
                 raise serializers.ValidationError(
-                    "Rating period expired."
+                    AuthMessages.RATING_PERIOD_REQUIRED
                 )
 
             if hasattr(order, "rating"):
                 raise serializers.ValidationError(
-                    "Order already rated."
+                    AuthMessages.ALREADY_RATED
                 )
 
         if self.instance:
             editable_until = (
                 self.instance.created_at + timedelta(hours=24)
             )
-
             if timezone.now() > editable_until:
                 raise serializers.ValidationError(
-                    "Rating can only be updated within 24 hours."
+                    AuthMessages.RATING_IN_24_HOURS
                 )
 
         if attrs.get("had_issues") and not attrs.get(
@@ -84,7 +80,7 @@ class OrderRatingSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {
                     "issue_description":
-                    "Issue description is required."
+                    AuthMessages.ISSUE_DESCRIPTION_REQUIRED
                 }
             )
 
@@ -100,7 +96,7 @@ class OrderRatingSerializer(serializers.ModelSerializer):
         for rating in ratings:
             if rating < 1 or rating > 5:
                 raise serializers.ValidationError(
-                    "Ratings must be between 1 and 5."
+                    AuthMessages.RATING_VALIDATION
                 )
 
         validated_data["overall_rating"] = round(

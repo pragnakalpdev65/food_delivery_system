@@ -33,7 +33,45 @@ class EnvSettings(BaseSettings):
     SITE_BASE_URL: str = "http://localhost:8000"   
     
 
+    # Cors allowed origins
+    CORS_ALLOWED_ORIGINS: Union[List[str], str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
 
+    @field_validator("CORS_ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_allowed_cors_origins(cls, v: Any) -> List[str]:
+        """Convert comma-separated string to list."""
+
+        if isinstance(v, str):
+            v = v.strip()
+
+            # if v is empty
+            if not v:
+                return []
+
+            pattern = r"^https?://([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:\d+)?$"
+
+            # Handle cases like "["http://localhost:3000", "http://127.0.0.1:3000"]"
+            import re
+
+            if re.match(pattern, v):
+                import ast
+
+                try:
+                    parsed = ast.literal_eval(v)
+
+                    if isinstance(parsed, list):
+                        # remove space
+                        return [str(item).strip() for item in parsed]
+                except (ValueError, SyntaxError):
+                    raise ValueError(f"Invalid list format: {v}") from None
+
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+
+        return v
+    
     # Logging Configuration
     USE_JSON_LOGGING: bool = False
 

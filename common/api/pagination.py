@@ -17,3 +17,5 @@ class OrderPagination(CursorPagination):
 class ReviewPagination(LimitOffsetPagination):
     default_limit = 20
     max_limit = 50
+class MyRatingsPagination(PageNumberPagination):
+    page_size = 10

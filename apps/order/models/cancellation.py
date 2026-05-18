@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from common.models.base import UUIDModel,TimestampedModel
 from apps.restaurant.models.restaurant import Restaurant
 from apps.order.models.order import Order
@@ -9,7 +10,7 @@ class CancellationPolicy(UUIDModel,TimestampedModel):
     restaurant = models.OneToOneField(Restaurant,on_delete=models.CASCADE,related_name='cancellation_policy')
     full_refund_window = models.IntegerField(default=5)
     partial_refund_window = models.IntegerField(default=15)
-    partial_refund_percentage = models.IntegerField(default=50)
+    partial_refund_percentage = models.IntegerField(default=50, validators=[MinValueValidator(0), MaxValueValidator(100)])
     allow_customer_cancellation = models.BooleanField(default=True)
     
     def __str__(self):
@@ -27,7 +28,7 @@ class OrderCancellation(UUIDModel,TimestampedModel):
     reason_detail = models.TextField(blank=True,null=True)
     refund_amount = models.DecimalField(max_digits=8,decimal_places=2,default=0.00)
     refund_percentage = models.IntegerField(choices=REFUND_PERCENTAGE_CHOICES,default=0)
-    cancelled_at = models.DateTimeField(auto_now_add=True)
+    # cancelled_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Cancellation - Order #{self.order.order_number}"

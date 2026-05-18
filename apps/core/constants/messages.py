@@ -53,7 +53,6 @@ class AuthMessages:
     CONFIRM_OLD_EMAIL = _("Changes in mail is confirmed by old email")
     REQUEST_EXPIRED = _("Request expired")
     CUSTOMER_NOT_FOUND = _("Customer profile not found")
-    DRIVER_NOT_FOUND = _("Driver profile not found")
     ADDRESS_NOT_FOUND = _("Address profile not found")
 
     #restaurants
@@ -62,9 +61,6 @@ class AuthMessages:
     
 
     # order
-    ALREADY_CANCELLED = _("Order is already cancelled")
-    CAN_NOT_BE_CANCELLED = _("Order cannot be cancelled at this stage")
-    CANCELLED_SUCCESS = _("Order cancelled successfully")
     UPDATE_ORDER = _("Order updated")
     INVALID_ORDER = _("Invalid order")
     DRIVER_REQUIRED = _( "driver_id is required")
@@ -86,9 +82,43 @@ class AuthMessages:
     MINIMUM_ORDER_NOT_MET = _(
         "Order total must meet the restaurant's minimum order of %(minimum_order)s"
     )
+    MAX_200_CHAR_ALLOWED = _("Max 200 characters allowed.")
+    MAX_500_CHAR_ALLOWED = _("Max 500 characters allowed.")
+
+    
+    #Cancellation
+    CANCELLATION_NOT_ALLOWED = _("Restaurant does not allow cancellations")
+    CANCELLATION_REASON_REQUIRED = _("Cancellation reason is required")
+    CANCELLED_SUCCESS = _("Order cancelled successfully")
+    ALREADY_CANCELLED = _("Order is already cancelled")
+    CAN_NOT_BE_CANCELLED = _("Order cannot be cancelled at this stage")
+    VALIDATE_REFUND = _("Partial refund window must be greater than full refund window")
+    VALIDATE_REFUND_PERCENTAGE = _("Refund percentage must be between 0 and 100")
     
     #Review
-    
-    RATING_VALIDATION = _("Rating must be between 1 and 5")
     REVIEW_OWN_ORDER = _("You can only review your own order")
     REVIEW_DELIVERED_ORDER = _("Order must be delivered to review")
+    
+    #Favorite
+    ALREADY_FAVORITE = _("Already favorite")
+    ADDED_TO_FAVORITE = _("Added to favorite")
+    REMOVED_FROM_FAVORITE = _("Removed from favorite")
+    
+    #Hours(Operating/Special)    
+    ALREADY_EXIST_OPH = _("Operating hours for this day already exist.")
+    OPENING_TIME_REQUIRED = _("Opening time is required.")
+    CLOSING_TIME_REQUIRED =_("Closing time is required.")
+    CLOSING_TIME_VALIDATION = _("Closing time must be after opening time.'")
+    RESTAURANT_CLOSED = _("Restaurant is closed")
+    NO_ITEMS_AVAILABLE = _("No items available like this")
+    
+    #Rating
+    EDIT_RATING_PERMISSIONS = _("You can only edit your own rating.")
+    RATE_OWN_ORDER= _("You can only rate your own orders.")
+    RATE_DELIVERED_ORDER = _("You can only rate delivered orders.")
+    ACTUAL_DELIVERY_TIME_NOT_FOUND = _("Actual delivery time not found.")
+    RATING_PERIOD_REQUIRED = _("Rating period expired.") 
+    ALREADY_RATED = _("Order already rated.")
+    RATING_IN_24_HOURS = _("Rating can only be updated within 24 hours.")
+    ISSUE_DESCRIPTION_REQUIRED = _("Issue description is required.")
+    RATING_VALIDATION = _("Rating must be between 1 and 5")

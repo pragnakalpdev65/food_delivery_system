@@ -33,7 +33,7 @@ class OrderStatsSerializer(serializers.Serializer):
     def to_representation(self, instance):
         request = self.context["request"]
 
-        orders = Order.objects.filter(customer=request.user)
+        orders = Order.objects.filter(customer=request.user).exclude(status=OrderStatus.CANCELLED)
 
         total_orders = orders.count()
 

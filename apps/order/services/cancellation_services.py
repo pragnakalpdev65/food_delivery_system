@@ -1,5 +1,7 @@
 from django.utils import timezone
 from decimal import Decimal
+from apps.core.constants.choices import OrderStatus
+from apps.core.constants.messages import AuthMessages
 class CancellationServices:
     
     @staticmethod
@@ -24,7 +26,7 @@ class CancellationServices:
             return total, 100
 
         if elapsed_minutes <= partial_window:
-            refund_amount = (total * Decimal(refund_percentage)) / Decimal(100)
+            refund_amount = ((total * Decimal(refund_percentage)) / Decimal(100)).quantize(Decimal('0.01'))
             return refund_amount, refund_percentage
 
         return Decimal("0.00"), 0
@@ -34,15 +36,15 @@ class CancellationServices:
     def can_cancel(order, user):
 
         if hasattr(order, "cancellation"):
-            return False, "Order already cancelled"
+            return False, AuthMessages.ALREADY_CANCELLED
 
-        if order.status in ["delivered", "cancelled"]:
-            return False,"Order cannot be cancelled"
+        if order.status in [OrderStatus.PREPARING,OrderStatus.DELIVERED,OrderStatus.CANCELLED]:
+            return False, AuthMessages.CAN_NOT_BE_CANCELLED
 
         policy = getattr(order.restaurant, "cancellation_policy", None)
 
         if policy and not policy.allow_customer_cancellation:
-            return False,"Restaurant does not allow cancellations"
+            return False, AuthMessages.CANCELLATION_NOT_ALLOWED
 
         if order.customer != user:
             return False,"Not allowed"
