@@ -1,99 +1,113 @@
-from django.shortcuts import get_object_or_404
-
-from drf_spectacular.utils import extend_schema
+from rest_framework.viewsets import ViewSet
+from rest_framework.decorators import action
 from rest_framework import permissions, status
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
 
-from apps.restaurant.models.menu import MenuItem
 from apps.restaurant.models.restaurant import Restaurant
-from apps.users.models import (
-    FavoriteRestaurant,
-    FavoriteMenuItem,
-)
-
-from apps.users.api.v1.serializers.favorites import (
-    FavoriteRestaurantSerializer,
-    FavoriteMenuItemSerializer,
-)
+from apps.users.models import FavoriteRestaurant
+from apps.users.api.v1.serializers.favorites import FavoriteRestaurantSerializer
+from apps.permissions.order_permissions import IsCustomer
+from apps.restaurant.models.menu import MenuItem
+from apps.users.models import FavoriteMenuItem
+from apps.users.api.v1.serializers.favorites import FavoriteMenuItemSerializer
+from apps.core.constants.messages import AuthMessages
 
 
+from rest_framework.viewsets import ViewSet
+from rest_framework.decorators import action
+from rest_framework import permissions, status
+from rest_framework.response import Response
+class FavoriteRestaurantViewSet(ViewSet):
+    permission_classes = [permissions.IsAuthenticated, IsCustomer]
 
-class FavoriteRestaurantView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    def list(self, request):
+        queryset = FavoriteRestaurant.objects.select_related("restaurant").filter(
+            customer=request.user
+        ).order_by('-created_at')
 
-    @extend_schema(
-        description="Add restaurant to favorites",
-    )
-    def post(self, request, restaurant_id):
+        serializer = FavoriteRestaurantSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        restaurant_id = request.data.get("restaurant_id")
+
+        if not restaurant_id:
+            return Response(
+                {"detail": "restaurant_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         restaurant = get_object_or_404(Restaurant, id=restaurant_id)
 
         favorite, created = FavoriteRestaurant.objects.get_or_create(
-                customer=request.user,
-                restaurant=restaurant,)
+            customer=request.user,
+            restaurant=restaurant,
+        )
 
         if not created:
             return Response(
-                {"detail": "Restaurant already favorited"},
+                {"detail": AuthMessages.ALREADY_FAVORITE},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         return Response(
-            {"detail": "Restaurant added to favorites"},
+            {"detail": AuthMessages.ADDED_TO_FAVORITE},
             status=status.HTTP_201_CREATED,
         )
 
-    @extend_schema(
-        description="Remove restaurant from favorites",
-    )
-    def delete(self, request, restaurant_id):
-        favorite = FavoriteRestaurant.objects.filter(
+    def destroy(self, request, pk=None):
+        favorite = get_object_or_404(
+            FavoriteRestaurant,
             customer=request.user,
-            restaurant_id=restaurant_id,
+            restaurant_id=pk,
         )
-
-        if not favorite.exists():
-            return Response(
-                {"detail": "Favorite restaurant not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
         favorite.delete()
 
         return Response(
-            {"detail": "Restaurant removed from favorites"},
+            {"detail": AuthMessages.REMOVED_FROM_FAVORITE},
             status=status.HTTP_204_NO_CONTENT,
         )
-        
-        
-class FavoriteRestaurantListView(ListAPIView):
-    serializer_class = FavoriteRestaurantSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return FavoriteRestaurant.objects.select_related(
-            "restaurant"
-        ).filter(customer=self.request.user)
-        
-class FavoriteRestaurantCheckView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, restaurant_id):
+    @action(detail=True, methods=["get"])
+    def check(self, request, pk=None):
         is_favorited = FavoriteRestaurant.objects.filter(
             customer=request.user,
-            restaurant_id=restaurant_id,
+            restaurant_id=pk,
         ).exists()
 
-        return Response(
-            {"is_favorited": is_favorited},
-            status=status.HTTP_200_OK,
-        )
-class FavoriteMenuItemView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+        return Response({"is_favorited": is_favorited})
+class FavoriteMenuItemViewSet(ViewSet):
+    permission_classes = [permissions.IsAuthenticated, IsCustomer]
 
-    def post(self, request, item_id):
-        item = get_object_or_404(MenuItem, id=item_id)
+    def _get_item(self, item_id):
+        if not item_id:
+            return None
+        return get_object_or_404(MenuItem, id=item_id)
+
+    @extend_schema(description="List favorite menu items")
+    def list(self, request):
+        queryset = (
+            FavoriteMenuItem.objects
+            .select_related("menu_item")
+            .filter(customer=request.user)
+            .order_by("-created_at")
+        )
+        serializer = FavoriteMenuItemSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(description="Add menu item to favorites")
+    def create(self, request):
+        item_id = request.data.get("item_id")
+
+        if not item_id:
+            return Response(
+                {"detail": "item_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        item = self._get_item(item_id)
 
         favorite, created = FavoriteMenuItem.objects.get_or_create(
             customer=request.user,
@@ -102,51 +116,35 @@ class FavoriteMenuItemView(APIView):
 
         if not created:
             return Response(
-                {"detail": "Menu item already favorited"},
+                {"detail": AuthMessages.ALREADY_FAVORITE},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         return Response(
-            {"detail": "Menu item added to favorites"},
+            {"detail": AuthMessages.ADDED_TO_FAVORITE},
             status=status.HTTP_201_CREATED,
         )
 
-    def delete(self, request, item_id):
-        favorite = FavoriteMenuItem.objects.filter(
+    @extend_schema(description="Remove menu item from favorites")
+    def destroy(self, request, pk=None):
+        favorite = get_object_or_404(
+            FavoriteMenuItem,
             customer=request.user,
-            menu_item_id=item_id,
+            menu_item_id=pk,
         )
-
-        if not favorite.exists():
-            return Response(
-                {"detail": "Favorite menu item not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
         favorite.delete()
 
         return Response(
-            {"detail": "Menu item removed from favorites"},
+            {"detail": AuthMessages.REMOVED_FROM_FAVORITE},
             status=status.HTTP_204_NO_CONTENT,
         )
-class FavoriteMenuItemListView(ListAPIView):
-    serializer_class = FavoriteMenuItemSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return FavoriteMenuItem.objects.select_related(
-            "menu_item"
-        ).filter(customer=self.request.user)
-        
-class FavoriteMenuItemCheckView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, item_id):
+    @extend_schema(description="Check if menu item is favorite")
+    @action(detail=True, methods=["get"])
+    def check(self, request, pk=None):
         is_favorited = FavoriteMenuItem.objects.filter(
             customer=request.user,
-            menu_item_id=item_id,
+            menu_item_id=pk,
         ).exists()
 
-        return Response(
-            {"is_favorited": is_favorited},
-            status=status.HTTP_200_OK,
-        )
+        return Response({"is_favorited": is_favorited})

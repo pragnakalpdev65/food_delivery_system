@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from common.models.base import TimestampedModel,UUIDModel
 from apps.restaurant.models.restaurant import Restaurant
 from apps.core.constants.choices import WeekDays
@@ -16,7 +17,7 @@ class OperatingHours(TimestampedModel,UUIDModel):
         ordering = ['day_of_week']
 
     def __str__(self):
-        return f"{self.restaurant.name} - {self.get_day_of_week_display()}"
+        return f"{self.restaurant.name}"
     
 class SpecialHours(TimestampedModel,UUIDModel):
     restaurant = models.ForeignKey(Restaurant,on_delete=models.CASCADE,related_name='special_hours')
@@ -27,7 +28,17 @@ class SpecialHours(TimestampedModel,UUIDModel):
     reason = models.CharField(max_length=200)
 
     class Meta:
+        unique_together = ['restaurant', 'date']
         ordering = ['date']
+
+    def clean(self):
+        if not self.is_closed:
+            if self.opening_time is None or self.closing_time is None:
+                raise ValidationError(
+                    "Special hours must include opening_time and closing_time when not closed."
+                )
+
+        super().clean()
 
     def __str__(self):
         return f"{self.restaurant.name} - {self.date}"

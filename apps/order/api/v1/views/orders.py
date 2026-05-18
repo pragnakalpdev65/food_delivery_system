@@ -17,6 +17,7 @@ from apps.permissions.order_permissions import (
 )
 from django.core.cache import cache
 from apps.core.constants.messages import AuthMessages
+from apps.restaurant.services.availability_service import RestaurantAvailabilityService
 from apps.core.constants.error_codes import ErrorCodes
 from apps.core.constants.choices import UserType
 from apps.users.models import CustomUser
@@ -108,10 +109,6 @@ class OrderViewSet(ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [IsAuthenticated(), IsCustomer()]
-
-        if self.action == "cancel":
-            return [IsAuthenticated(), IsOrderCustomer()]
-
         if self.action == "assign_driver":
             return [IsAuthenticated(), IsRestaurantOwner()]
         
@@ -120,30 +117,27 @@ class OrderViewSet(ModelViewSet):
 
         return [IsAuthenticated()]
 
-    @extend_schema(
-        description="Cancel an order (Customer only, if pending/confirmed)",
-    )
-    @action(detail=True, methods=['post'])
-    def cancel(self, request, pk=None):
-        order = self.get_object()
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if order.status == OrderStatus.CANCELLED:
-            return Response({"message": AuthMessages.ALREADY_CANCELLED})
+        restaurant = serializer.validated_data.get("restaurant")
 
-        else :
-            if order.status not in [OrderStatus.PENDING, OrderStatus.CONFIRMED]:                
+        is_reorder = getattr(serializer, "is_reorder", False)
+
+        if restaurant and not is_reorder:
+            if not RestaurantAvailabilityService.is_currently_open(restaurant.id):
                 return Response(
-                    {"error": AuthMessages.CAN_NOT_BE_CANCELLED,
-                    "code" : ErrorCodes.CAN_NOT_BE_CANCELLED},
-                   
+                    {"error": AuthMessages.RESTAURANT_CLOSED},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-            order.status = OrderStatus.CANCELLED
-            order.save()
-
-            return Response({"message": AuthMessages.CANCELLED_SUCCESS})
-            
-
+    @extend_schema(
+        description="Assign a driver to the order (Restaurant owner only)",
+    )
     @action(detail=True, methods=['post'])
     def assign_driver(self, request, pk=None):
         order = self.get_object()
@@ -187,7 +181,10 @@ class OrderViewSet(ModelViewSet):
         order.save()
 
         return Response({"message":AuthMessages.ASSIGN_SUCCESS })
-    
+
+    @extend_schema(
+        description="Update order status based on allowed transitions",
+    )    
     @action(detail=True, methods=['post'])
     def update_status(self, request, pk=None):
         order = self.get_object()
@@ -227,7 +224,10 @@ class OrderViewSet(ModelViewSet):
                 "status": order.status
             }
         )
-        
+     
+    @extend_schema(
+        description="Get estimated delivery time for the order",
+    ) 
     @action(detail=True, methods=['get'])
     def eta(self, request, pk=None):
         order = self.get_object()
@@ -264,7 +264,10 @@ class OrderViewSet(ModelViewSet):
             order_data,
             status=status.HTTP_201_CREATED
         )
-         
+    @extend_schema(
+        description="Get statistics for the authenticated user's orders",
+        responses=OrderStatsSerializer,
+    )        
     @action(detail=False, methods=["get"])
     def order_stats(self, request):
         serializer = OrderStatsSerializer(

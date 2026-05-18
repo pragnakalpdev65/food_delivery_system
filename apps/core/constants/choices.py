@@ -22,13 +22,13 @@ class OrderStatus(models.TextChoices):
     CANCELLED = "cancelled", "Cancelled"
     
 class WeekDays(models.TextChoices):
-    MONDAY = 1, _('Monday')
-    TUESDAY = 2, _('Tuesday')
-    WEDNESDAY = 3, _('Wednesday')
-    THURSDAY = 4, _('Thursday')
-    FRIDAY = 5, _('Friday')
-    SATURDAY = 6, _('Saturday')
-    SUNDAY = 7, _('Sunday')
+    MONDAY = 0, _('Monday')
+    TUESDAY = 1, _('Tuesday')
+    WEDNESDAY = 2, _('Wednesday')
+    THURSDAY = 3, _('Thursday')
+    FRIDAY = 4, _('Friday')
+    SATURDAY = 5, _('Saturday')
+    SUNDAY = 6, _('Sunday')
 
 class Reasons(models.TextChoices):
     CUSTOMER_REQUEST = "customer_request","Customer Request"

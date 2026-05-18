@@ -92,29 +92,6 @@ class TestOrderAPI:
         response = client.post(url, {"status": "DELIVERED"}, format='json')
         assert response.data["code"] == "invalid_transition"
 
-
-    def test_customer_can_cancel_pending_order(self, customer, order, client):
-        client.force_authenticate(user=customer)
-
-        url = reverse('orders-cancel', args=[order.id])
-
-        response = client.post(url)
-        assert response.status_code == 200
-        order.refresh_from_db()
-        assert order.status == OrderStatus.CANCELLED
-
-
-    def test_cannot_cancel_after_preparing(self, customer, order, client):
-        order.status = OrderStatus.PREPARING
-        order.save()
-
-        client.force_authenticate(user=customer)
-
-        url = reverse('orders-cancel', args=[order.id])
-        response = client.post(url)
-
-        assert response.data["code"] == "can_not_be_cancelled"
-
     def test_owner_can_assign_driver(self, owner, driver, order, client):
         order.status = OrderStatus.READY
         order.save()
@@ -129,15 +106,6 @@ class TestOrderAPI:
 
         assert order.driver == driver
         assert order.status == OrderStatus.PICKED_UP
-        
-    def test_driver_cannot_cancel_order(self, driver, order, client):
-        client.force_authenticate(user=driver)
-
-        url = reverse('orders-cancel', args=[order.id])
-        response = client.post(url)
-
-        assert response.status_code == 403
-
 
     def test_cannot_assign_driver_twice(self, owner, driver, order, client):
         order.status = OrderStatus.READY

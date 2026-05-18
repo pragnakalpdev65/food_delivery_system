@@ -1,29 +1,37 @@
+# apps/core/middleware/jwt_auth.py
+
 from urllib.parse import parse_qs
 from channels.db import database_sync_to_async
-from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth.models import AnonymousUser
+from rest_framework_simplejwt.tokens import AccessToken
 from apps.users.models.user import CustomUser
+
 
 class JWTAuthMiddleware:
     def __init__(self, inner):
         self.inner = inner
 
     async def __call__(self, scope, receive, send):
-        query_string = parse_qs(scope["query_string"].decode())
-        token = query_string.get("token")
+        scope["user"] = AnonymousUser()  # default
 
-        if token:
-            try:
+        try:
+            query_string = parse_qs(scope["query_string"].decode())
+            token = query_string.get("token")
+
+            if token:
                 access_token = AccessToken(token[0])
                 user = await self.get_user(access_token["user_id"])
                 scope["user"] = user
-            except:
-                scope["user"] = AnonymousUser()
-        else:
-            scope["user"] = AnonymousUser()
+
+        except Exception:
+            # silently fail → keep AnonymousUser
+            pass
 
         return await self.inner(scope, receive, send)
 
     @database_sync_to_async
     def get_user(self, user_id):
-        return CustomUser.objects.get(id=user_id)
+        try:
+            return CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return AnonymousUser()

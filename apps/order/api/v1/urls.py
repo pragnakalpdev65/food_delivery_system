@@ -6,8 +6,7 @@ from .views.review import ReviewView
 
 from apps.order.api.v1.views.rating import (
     CreateOrderRatingView,
-    RetrieveOrderRatingView,
-    UpdateOrderRatingView,
+    OrderRatingDetailView,
     MyRatingsView,
 )
 from apps.order.api.v1.views.cancellation import CancellationView,CancellationPolicyView
@@ -19,10 +18,11 @@ router.register(r"orders", OrderViewSet, basename="orders")
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("review",ReviewView.as_view(),name = "Review"),
+    path("review",ReviewView.as_view(),name = "review"),
     path("<uuid:order_id>/rate/",CreateOrderRatingView.as_view(),name="create-order-rating",),
-    path("<uuid:order_id>/rating/",RetrieveOrderRatingView.as_view(),name="get-order-rating",),
-    path("<uuid:order_id>/rating/update/",UpdateOrderRatingView.as_view(),name="update-order-rating",),
+    path("<uuid:order_id>/rating/",OrderRatingDetailView.as_view(),name="order-rating-detail",),
+    path("<uuid:order_id>/rating/",OrderRatingDetailView.as_view(),name="get-order-rating",),
+    path("<uuid:order_id>/rating/",OrderRatingDetailView.as_view(),name="update-order-rating",),
     path("users/my-ratings/",MyRatingsView.as_view(),name="my-ratings",),
     path("instruction-templates/",InstructionTemplateListView.as_view(),name="instruction-templates"),
     path("<uuid:order_id>/cancel/",CancellationView.as_view(),name="order-cancel",),

@@ -1,9 +1,8 @@
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from drf_spectacular.utils import extend_schema
-
 from apps.restaurant.models.restaurant import Restaurant
 from apps.restaurant.models.operating_hours import (
     OperatingHours,
@@ -14,27 +13,28 @@ from apps.restaurant.api.v1.serializers.operating_hours import (
     SpecialHoursSerializer,
     RestaurantAvailabilitySerializer
 )
-from apps.restaurant.services.availability_service import (
-    RestaurantAvailabilityService
-)
+from apps.restaurant.services.availability_service import RestaurantAvailabilityService
 from apps.permissions.restaurant_permissions import IsRestaurantOwner
+from django.shortcuts import get_object_or_404
 
 
 class OperatingHoursListCreateView(generics.ListCreateAPIView):
 
     serializer_class = OperatingHoursSerializer
     permission_classes = [IsAuthenticated,IsRestaurantOwner]
-
+        
     def get_queryset(self):
-
         return OperatingHours.objects.filter(
             restaurant_id=self.kwargs['pk']
         )
 
     def perform_create(self, serializer):
 
-        restaurant = Restaurant.objects.get(pk=self.kwargs['pk'])
-
+        restaurant = get_object_or_404(
+            Restaurant,
+            pk=self.kwargs['pk'],
+            owner=self.request.user
+        )
         serializer.save(restaurant=restaurant)
 
 
@@ -65,7 +65,6 @@ class SpecialHoursListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
 
         restaurant = Restaurant.objects.get(pk=self.kwargs['pk'])
-
         serializer.save(restaurant=restaurant)
 
 
@@ -85,7 +84,7 @@ class SpecialHoursDeleteView(generics.DestroyAPIView):
 class RestaurantIsOpenView(generics.GenericAPIView):
 
     serializer_class = RestaurantAvailabilitySerializer
-
+    permission_classes = [AllowAny]
     def get(self, request, *args, **kwargs):
 
         restaurant_id = self.kwargs['pk']
@@ -94,21 +93,17 @@ class RestaurantIsOpenView(generics.GenericAPIView):
             RestaurantAvailabilityService
             .is_currently_open(restaurant_id)
         )
-
         data = {
             'restaurant_id': restaurant_id,
             'is_open': is_open,
         }
-
         serializer = self.get_serializer(data)
-
         return Response(serializer.data)
-
 
 class RestaurantNextOpeningView(generics.GenericAPIView):
 
     serializer_class = RestaurantAvailabilitySerializer
-
+    permission_classes = [AllowAny]
     def get(self, request, *args, **kwargs):
 
         restaurant_id = self.kwargs['pk']

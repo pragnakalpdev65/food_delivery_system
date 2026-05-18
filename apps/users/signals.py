@@ -2,11 +2,11 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from .models import CustomerProfile, DriverProfile
 from apps.order.models.order import Order, Review, OrderItem
-from apps.core.constants.choices import UserType
+from apps.core.constants.choices import UserType, OrderStatus
 
 User=get_user_model()
 logger = logging.getLogger(__name__)
@@ -24,21 +24,38 @@ def create_profile(sender,instance, created, **kwargs):
 @receiver(post_save, sender=Order)
 def notify_restaurant(sender, instance, created, **kwargs):
     if created:
-        print(f"New order received for {instance.restaurant.name}")
-        
+        logger.info(f"New order received for {instance.restaurant.name}")
+
+
+@receiver(pre_save, sender=Order)
+def cache_previous_order_status(sender, instance, **kwargs):
+    if instance.pk:
+        try:
+            instance._previous_status = sender.objects.values_list("status", flat=True).get(pk=instance.pk)
+        except sender.DoesNotExist:
+            instance._previous_status = None
+    else:
+        instance._previous_status = None
+
+
 @receiver(post_save, sender=Order)
-def update_stats(sender, instance, **kwargs):
-    if instance.status == "Delivered":
+def update_stats(sender, instance, created, **kwargs):
+    previous_status = getattr(instance, "_previous_status", None)
+    if instance.status == OrderStatus.DELIVERED and previous_status != OrderStatus.DELIVERED:
         customer = instance.customer
         driver = instance.driver
 
-        customer.total_orders += 1
-        customer.save()
+        if hasattr(customer, "customer_profile"):
+            profile = customer.customer_profile
+            profile.total_orders += 1
+            profile.save(update_fields=["total_orders"])
 
-        if driver:
-            driver.completed_deliveries += 1
-            driver.save()
-            
+        if driver and hasattr(driver, "driver_profile"):
+            profile = driver.driver_profile
+            profile.total_deliveries += 1
+            profile.save(update_fields=["total_deliveries"])
+
+
 @receiver(post_save, sender=Review)
 def update_rating(sender, instance, created, **kwargs):
     if created:
@@ -47,10 +64,11 @@ def update_rating(sender, instance, created, **kwargs):
         avg = sum(r.rating for r in reviews) / reviews.count()
         restaurant.average_rating = avg
         restaurant.save()
-        
+
 @receiver(post_save, sender=OrderItem)
 def update_subtotal(sender, instance, **kwargs):
     order = instance.order
-    order.subtotal = sum(item.total_price for item in order.items.all())
-    order.save()
+    subtotal = sum(item.get_total() for item in order.items.all())
+    if order.subtotal != subtotal:
+        Order.objects.filter(pk=order.pk).update(subtotal=subtotal)
 

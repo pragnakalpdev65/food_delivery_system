@@ -13,25 +13,26 @@ class RestaurantAvailabilityService:
 
     @staticmethod
     def get_todays_hours(restaurant_id):
-
         today = timezone.localdate()
 
-        special_hours = SpecialHours.objects.filter(restaurant_id=restaurant_id,date=today).first()
-
+        special_hours = SpecialHours.objects.filter(
+            restaurant_id=restaurant_id,
+            date=today
+        ).first()
 
         if special_hours:
             return special_hours
 
         weekday = today.weekday()
 
-        return (OperatingHours.objects.filter(restaurant_id=restaurant_id,day_of_week=weekday).first())
-    
+        return OperatingHours.objects.filter(
+            restaurant_id=restaurant_id,
+            day_of_week=weekday
+        ).first()
 
     @staticmethod
     def is_currently_open(restaurant_id):
-
         hours = RestaurantAvailabilityService.get_todays_hours(restaurant_id)
-        
         if not hours:
             return False
 
@@ -39,10 +40,10 @@ class RestaurantAvailabilityService:
             return False
 
         now = timezone.localtime().time()
-
-        return (
-            hours.opening_time <= now <= hours.closing_time
-        )
+        if hours.opening_time <= hours.closing_time:
+            return hours.opening_time <= now <= hours.closing_time
+        else:
+            return now >= hours.opening_time or now <= hours.closing_time
 
     @staticmethod
     def get_next_opening_time(restaurant_id):
@@ -62,10 +63,9 @@ class RestaurantAvailabilityService:
                 if special_hours.is_closed:
                     continue
 
-                opening_datetime = datetime.combine(
-                    check_date,
-                    special_hours.opening_time,
-                    tzinfo=current_tz
+                opening_datetime = timezone.make_aware(
+                    datetime.combine(check_date, special_hours.opening_time),
+                    current_tz
                 )
 
                 if opening_datetime > now:

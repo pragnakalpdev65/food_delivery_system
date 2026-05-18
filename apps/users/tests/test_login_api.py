@@ -181,6 +181,5 @@ class TestLogoutAPI:
         payload = {"refresh_token": "invalidtoken"}  # intentionally malformed
 
         response = api_client.post(url, payload, format="json")
-        print(response.data)
         # API should reject invalid token format
         assert "Invalid token." in response.data["message"]

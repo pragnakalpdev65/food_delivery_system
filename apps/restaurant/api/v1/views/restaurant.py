@@ -26,7 +26,7 @@ from apps.permissions.restaurant_permissions import IsOwnerOrReadOnly
 from common.api.pagination import RestaurantPagination, MenuItemPagination
 
 from apps.restaurant.services.cache_services import RestaurantCacheService
-
+from django.db.models import Count 
 
 @extend_schema_view(
     list=extend_schema(
@@ -65,7 +65,7 @@ from apps.restaurant.services.cache_services import RestaurantCacheService
 )
 class RestaurantViewSet(ModelViewSet):
 
-    queryset = Restaurant.objects.all().order_by('id') 
+    queryset = Restaurant.objects.annotate(favorite_count=Count('favorited_by')).order_by('id')
     pagination_class = RestaurantPagination
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]

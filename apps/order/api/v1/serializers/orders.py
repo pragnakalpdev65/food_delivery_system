@@ -7,7 +7,8 @@ from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta
 from apps.core.constants.messages import AuthMessages
-
+from apps.restaurant.services.availability_service import RestaurantAvailabilityService
+from apps.core.constants.messages import AuthMessages
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,7 +22,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
     
     def validate_special_instructions(self, value):
         if value and len(value) > 200:
-            raise serializers.ValidationError("Max 200 characters allowed.")
+            raise serializers.ValidationError(AuthMessages.MAX_200_CHAR_ALLOWED)
         return value
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -34,7 +35,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def validate_delivery_instructions(self, value):
         if value and len(value) > 500:
-            raise serializers.ValidationError("Max 500 characters allowed.")
+            raise serializers.ValidationError(AuthMessages.MAX_500_CHAR_ALLOWED)
         return value
     def validate(self, data):
         items = data.get('items')
@@ -56,11 +57,15 @@ class OrderSerializer(serializers.ModelSerializer):
                     }
                 )
         return data
+    
 
     @transaction.atomic
     def create(self, validated_data):
         items_data = validated_data.pop('items')
         user = self.context['request'].user
+        
+        # if not RestaurantAvailabilityService.is_currently_open(restaurant.id):
+        #     raise serializers.ValidationError({"error": "Restaurant is currently closed"})
 
         order = Order.objects.create(
             customer=user,

@@ -6,7 +6,8 @@ from apps.restaurant.models.menu import MenuItem
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from apps.core.constants.choices import OrderStatus,ContactPreference
-
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db import transaction
 class Order(TimestampedModel,UUIDModel):
     
     customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name="orders")
@@ -19,11 +20,11 @@ class Order(TimestampedModel,UUIDModel):
     delivery_fee = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     tax = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     total_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
-    special_instructions = models.TextField(null=True, blank=True) 
+    special_instructions = models.TextField(null=True, blank=True, max_length=200) 
     estimated_delivery_time = models.DateTimeField(null=True)
     actual_delivery_time = models.DateTimeField(null=True)
-    delivery_instructions = models.TextField(null=True, blank=True)
-    contact_preference = models.CharField(max_length=20,choices=ContactPreference.choices,default=ContactPreference.CALL,null=True)
+    delivery_instructions = models.TextField(null=True, blank=True, max_length=500)
+    contact_preference = models.CharField(max_length=20,choices=ContactPreference.choices,default=ContactPreference.CALL)
     utensils_required = models.BooleanField(default=False)
     contactless_delivery = models.BooleanField(default=False)
 
@@ -43,6 +44,7 @@ class Order(TimestampedModel,UUIDModel):
         self.total_amount = self.subtotal + self.delivery_fee + self.tax
         return self.total_amount
     
+    
     def save(self, *args, **kwargs):
         if not self.order_number:
             last_order = (
@@ -57,6 +59,7 @@ class Order(TimestampedModel,UUIDModel):
                 self.order_number = 1
         super().save(*args, **kwargs)
         
+
 class OrderItem(TimestampedModel,UUIDModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE,related_name="items")
     menu_item = models.ForeignKey(MenuItem, on_delete=models.CASCADE, related_name="order_items")
@@ -78,15 +81,13 @@ class Review(TimestampedModel,UUIDModel):
         self.full_clean()
         super().save(*args, **kwargs)
         if self.restaurant:
-            self.restaurant.update_average_rating()
-            
-            
+            self.restaurant.update_average_rating()       
 class OrderRating(TimestampedModel, UUIDModel):
     order = models.OneToOneField(Order,on_delete=models.CASCADE,related_name="rating")
     customer = models.ForeignKey(CustomUser,on_delete=models.CASCADE,related_name="order_ratings")
-    food_quality = models.IntegerField()
-    delivery_speed = models.IntegerField()
-    packaging_quality = models.IntegerField()
+    food_quality = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    delivery_speed = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    packaging_quality = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     overall_rating = models.IntegerField(editable=False)
     comment = models.TextField(null=True, blank=True)
     would_recommend = models.BooleanField(default=True)
@@ -94,18 +95,6 @@ class OrderRating(TimestampedModel, UUIDModel):
     issue_description = models.TextField(null=True,blank=True)
 
     def clean(self):
-        # rating_fields = [
-        #     self.food_quality,
-        #     self.delivery_speed,
-        #     self.packaging_quality,
-        # ]
-
-        # for rating in rating_fields:
-        #     if rating < 1 or rating > 5:
-        #         raise ValidationError(
-        #             "Ratings must be between 1 and 5."
-        #         )
-
         if self.had_issues and not self.issue_description:
             raise ValidationError(
                 {

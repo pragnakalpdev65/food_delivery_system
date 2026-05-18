@@ -9,9 +9,12 @@ from apps.restaurant.models.menu import MenuItem
 from apps.restaurant.models.restaurant import Restaurant
 from apps.restaurant.api.v1.serializers.menu import MenuItemSerializer, MenuItemDetailSerializer, MenuItemListSerializer
 from common.api.pagination import MenuItemPagination
-
+from django.db.models import Count
 class MenuItemViewSet(ModelViewSet):
-    queryset = MenuItem.objects.all()
+    queryset = MenuItem.objects.annotate(
+        favorite_count=Count('favorited_by')
+    ).order_by('id')
+
     pagination_class = MenuItemPagination
     permission_classes = [IsMenuItemOwner]
 
