@@ -104,6 +104,7 @@ REST_FRAMEWORK = {
     # # Pagination: Use our custom pagination class
     "DEFAULT_PAGINATION_CLASS": "common.api.pagination.StandardPagination",
     "PAGE_SIZE": 20,
+    "DEFAULT_PERMISSION_CLASSES": "rest_framework.permissions.IsAuthenticated",
     # Exception handling: Use our centralized handler for consistent JSON responses
     "EXCEPTION_HANDLER": "common.api.exceptions.standardized_exception_handler",
     # Throttling: Limit API requests to prevent abuse
@@ -276,6 +277,17 @@ SPECTACULAR_SETTINGS = {
         }
     },
 }
+
+# =============================================================================
+# CORS
+# =============================================================================
+
+# Allow all origins in development for easy frontend testing
+# WARNING: Never use this in production!
+CORS_ALLOW_ALL_ORIGINS = False
+
+# Allowed cross origin from environment
+CORS_ALLOWED_ORIGINS = env.CORS_ALLOWED_ORIGINS
 
 
 # =============================================================================

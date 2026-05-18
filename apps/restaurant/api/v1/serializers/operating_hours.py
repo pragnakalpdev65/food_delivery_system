@@ -5,19 +5,12 @@ from apps.restaurant.models.operating_hours import (
     OperatingHours,
     SpecialHours
 )
-
+from apps.core.constants.messages import AuthMessages
 class OperatingHoursSerializer(serializers.ModelSerializer):
-    day_of_week = serializers.IntegerField(min_value=1, max_value=7,read_only=True)
+    day_of_week = serializers.IntegerField(min_value=0, max_value=6)
     class Meta:
         model = OperatingHours
-        fields = [
-            'id',
-            'restaurant',
-            'day_of_week',
-            'opening_time',
-            'closing_time',
-            'is_closed',
-        ]
+        fields = ['id','restaurant','day_of_week','opening_time','closing_time','is_closed']
         read_only_fields = ['restaurant']
 
     def validate(self, attrs):
@@ -26,61 +19,43 @@ class OperatingHoursSerializer(serializers.ModelSerializer):
         day = attrs.get('day_of_week')
 
         is_closed = attrs.get('is_closed', False)
-
         opening_time = attrs.get('opening_time')
         closing_time = attrs.get('closing_time')
-        
 
-
-        if OperatingHours.objects.filter(
+        queryset = OperatingHours.objects.filter(
             restaurant_id=restaurant,
             day_of_week=day
-        ).exists():
+        )
+        if self.instance:
+            queryset = queryset.exclude(pk=self.instance.pk)
+
+        if queryset.exists():
             raise serializers.ValidationError(
-                "Operating hours for this day already exist."
+                AuthMessages.ALREADY_EXIST_OPH
             )
 
-
         if not is_closed:
-
             if not opening_time:
                 raise serializers.ValidationError({
-                    'opening_time': (
-                        'Opening time is required.'
-                    )
+                    'opening_time': AuthMessages.OPENING_TIME_REQUIRED
                 })
 
             if not closing_time:
                 raise serializers.ValidationError({
-                    'closing_time': (
-                        'Closing time is required.'
-                    )
+                    'closing_time': AuthMessages.CLOSING_TIME_REQUIRED
                 })
 
             if opening_time >= closing_time:
                 raise serializers.ValidationError({
-                    'closing_time': (
-                        'Closing time must be after '
-                        'opening time.'
-                    )
+                    'closing_time': AuthMessages.CLOSING_TIME_VALIDATION
                 })
 
         return attrs
-
-
 class SpecialHoursSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SpecialHours
-        fields = [
-            'id',
-            'restaurant',
-            'date',
-            'opening_time',
-            'closing_time',
-            'is_closed',
-            'reason',
-        ]
+        fields = ['id','restaurant','date','opening_time','closing_time','is_closed','reason',]
         read_only_fields = ['restaurant']
 
     def validate(self, attrs):
@@ -95,22 +70,21 @@ class SpecialHoursSerializer(serializers.ModelSerializer):
             if not opening_time:
                 raise serializers.ValidationError({
                     'opening_time': (
-                        'Opening time is required.'
+                        AuthMessages.OPENING_TIME_REQUIRED
                     )
                 })
 
             if not closing_time:
                 raise serializers.ValidationError({
                     'closing_time': (
-                        'Closing time is required.'
+                        AuthMessages.CLOSING_TIME_REQUIRED
                     )
                 })
 
             if opening_time >= closing_time:
                 raise serializers.ValidationError({
                     'closing_time': (
-                        'Closing time must be after '
-                        'opening time.'
+                        AuthMessages.CLOSING_TIME_VALIDATION
                     )
                 })
 

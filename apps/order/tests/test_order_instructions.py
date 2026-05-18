@@ -9,6 +9,7 @@ from apps.users.models.user import CustomUser
 from apps.restaurant.models.restaurant import Restaurant
 from apps.restaurant.models.menu import MenuItem
 from apps.core.constants.choices import OrderStatus
+from apps.restaurant.models.operating_hours import OperatingHours
 
 @pytest.fixture
 def client():
@@ -48,9 +49,17 @@ def restaurant(db, owner):
         name="Test Restaurant",
         delivery_fee=50,
         opening_time = "10:00:00",
-        closing_time = "17:00:00"
+        closing_time = "20:00:00",
+        is_open = True
     )
-
+@pytest.fixture
+def operating_hours(db,restaurant):
+    return OperatingHours.objects.create(
+            restaurant=restaurant,
+            day_of_week=0,
+            opening_time="10:00:00",
+            closing_time="22:00:00",
+        )
 
 @pytest.fixture
 def menu_item(db, restaurant):
@@ -72,9 +81,8 @@ def order(db, customer, restaurant):
     )
 
 @pytest.mark.django_db
-def test_create_order_with_instructions(customer, restaurant, menu_item, client):
+def test_create_order_with_instructions(customer, restaurant, menu_item, client, operating_hours):    
     client.force_authenticate(user=customer)
-
     url = reverse("orders-list")
 
     payload = {
@@ -94,7 +102,6 @@ def test_create_order_with_instructions(customer, restaurant, menu_item, client)
     }
 
     response = client.post(url, payload, format="json")
-
     assert response.status_code == 201
 
     order = Order.objects.get(id=response.data["id"])
@@ -149,7 +156,7 @@ def test_item_special_instructions_exceed_limit(customer, restaurant, menu_item,
     assert response.status_code == 400
     
 @pytest.mark.django_db
-def test_default_instruction_values(customer, restaurant, menu_item, client):
+def test_default_instruction_values(customer, restaurant, menu_item, client, operating_hours):
     client.force_authenticate(user=customer)
 
     url = reverse("orders-list")
@@ -175,7 +182,9 @@ def test_default_instruction_values(customer, restaurant, menu_item, client):
     assert order.contactless_delivery is False
     
 @pytest.mark.django_db
-def test_get_instruction_templates(client):
+def test_get_instruction_templates(client,customer):
+    client.force_authenticate(user=customer)
+
     InstructionTemplate.objects.create(
         category="delivery",
         text="Leave at door",
@@ -191,13 +200,14 @@ def test_get_instruction_templates(client):
     url = reverse("instruction-templates")
 
     response = client.get(url)
-
     assert response.status_code == 200
     assert len(response.data) == 1
     assert response.data[0]["text"] == "Leave at door"
     
 @pytest.mark.django_db
-def test_templates_grouped_by_category(client):
+def test_templates_grouped_by_category(client,customer):
+    client.force_authenticate(user=customer)
+    
     InstructionTemplate.objects.create(category="delivery", text="Call me")
     InstructionTemplate.objects.create(category="food", text="Extra spicy")
     InstructionTemplate.objects.create(category="packaging", text="No plastic")

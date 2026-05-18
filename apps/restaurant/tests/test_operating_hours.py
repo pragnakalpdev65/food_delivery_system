@@ -113,7 +113,6 @@ class TestOperatingHours:
         }
 
         response = auth_client.put(url, data)
-
         assert response.status_code == status.HTTP_200_OK
 
         obj = OperatingHours.objects.get(
@@ -277,6 +276,5 @@ class TestNextOpening:
         )
 
         response = auth_client.get(url)
-
         assert response.status_code == status.HTTP_200_OK
         assert response.data["next_opening_time"] is not None

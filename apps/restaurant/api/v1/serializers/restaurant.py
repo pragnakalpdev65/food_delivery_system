@@ -1,21 +1,21 @@
 from rest_framework import serializers
 from apps.restaurant.models.restaurant import Restaurant
+from apps.restaurant.services.availability_service import RestaurantAvailabilityService
+
 
 class RestaurantSerializer(serializers.ModelSerializer):
     
     average_rating = serializers.FloatField(read_only=True)
     is_favorited = serializers.SerializerMethodField()
-    favorite_count = serializers.IntegerField(
-        source="favorited_by.count",
-        read_only=True,
-    )
+    favorite_count = serializers.IntegerField(read_only=True)
+    is_open_now = serializers.SerializerMethodField()
+    next_opening_time = serializers.SerializerMethodField()
     class Meta:
         model = Restaurant
         fields = [
             "id", "name", "address", "cuisine_type", "email",
             "opening_time", "closing_time", "delivery_fee", "minimum_order","logo","average_rating","is_favorited",
-            "favorite_count",
-
+            "favorite_count", "is_open_now", "next_opening_time"
         ]
         read_only_fields = ["id", "owner"]
         
@@ -28,6 +28,12 @@ class RestaurantSerializer(serializers.ModelSerializer):
         return obj.favorited_by.filter(
             customer=request.user
         ).exists()
+        
+    def get_is_open_now(self, obj):
+        return RestaurantAvailabilityService.is_currently_open(obj)
+
+    def get_next_opening_time(self, obj):
+        return RestaurantAvailabilityService.get_next_opening_time(obj)
 class RestaurantListSerializer(serializers.ModelSerializer):
     class Meta:
         model=Restaurant

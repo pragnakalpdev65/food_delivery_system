@@ -11,7 +11,7 @@ class OrderFilter(django_filters.FilterSet):
     min_amount = django_filters.NumberFilter(field_name="total_amount", lookup_expr="gte")
     max_amount = django_filters.NumberFilter(field_name="total_amount", lookup_expr="lte")
 
-    restaurant = django_filters.NumberFilter(field_name="restaurant_id")
+    restaurant = django_filters.UUIDFilter(field_name="restaurant_id")
 
     has_rating = django_filters.BooleanFilter(method="filter_has_rating")
 

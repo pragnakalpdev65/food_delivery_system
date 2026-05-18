@@ -100,15 +100,14 @@ def favorite_menu_item(customer, menu_item):
 @pytest.mark.django_db
 class TestFavoriteRestaurants:
 
-    def test_customer_can_add_restaurant_to_favorites(self,auth_client,restaurant):
-        """Customer should successfully favorite restaurant."""
+    def test_customer_can_add_restaurant_to_favorites(self, auth_client, restaurant):
+        url = reverse("favorite-restaurants-list")
 
-        url = reverse(
-            "favorite-restaurant-add",
-            kwargs={"restaurant_id": restaurant.id},
+        response = auth_client.post(
+            url,
+            {"restaurant_id": str(restaurant.id)},
+            format="json"
         )
-
-        response = auth_client.post(url)
 
         assert response.status_code == status.HTTP_201_CREATED
 
@@ -117,26 +116,22 @@ class TestFavoriteRestaurants:
             restaurant=restaurant,
         ).exists()
 
-    def test_customer_cannot_add_duplicate_restaurant_favorite(self,auth_client,restaurant,favorite_restaurant):
-        """Duplicate favorite restaurants should be prevented."""
+    def test_customer_cannot_add_duplicate_restaurant_favorite(self, auth_client, restaurant, favorite_restaurant):
+        url = reverse("favorite-restaurants-list")
 
-        url = reverse(
-            "favorite-restaurant-add",
-            kwargs={"restaurant_id": restaurant.id},
+        response = auth_client.post(
+            url,
+            {"restaurant_id": str(restaurant.id)},
+            format="json"
         )
 
-        response = auth_client.post(url)
-
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-
         assert "already" in str(response.data).lower()
 
-    def test_customer_can_remove_restaurant_from_favorites(self,auth_client,restaurant,favorite_restaurant):
-        """Customer should remove restaurant from favorites."""
-
+    def test_customer_can_remove_restaurant_from_favorites(self, auth_client, restaurant, favorite_restaurant):
         url = reverse(
-            "favorite-restaurant-add",
-            kwargs={"restaurant_id": restaurant.id},
+            "favorite-restaurants-detail",
+            kwargs={"pk": restaurant.id},
         )
 
         response = auth_client.delete(url)
@@ -147,74 +142,62 @@ class TestFavoriteRestaurants:
             restaurant=restaurant
         ).exists()
 
-    def test_customer_can_view_favorite_restaurants(self,auth_client,favorite_restaurant):
-        """List endpoint should return user's favorite restaurants."""
-
-        url = reverse("favorite-restaurant-list")
+    def test_customer_can_view_favorite_restaurants(self, auth_client, favorite_restaurant):
+        url = reverse("favorite-restaurants-list")
 
         response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
 
-        assert len(response.data["results"]) >= 1
-        
-    def test_favorite_restaurant_list_only_shows_current_user_data(self, auth_client, another_customer, restaurant, favorite_restaurant):
-        """Users should only see their own favorites."""
+        assert len(response.data) >= 1  
 
+    def test_favorite_restaurant_list_only_shows_current_user_data(self, auth_client, another_customer, restaurant, favorite_restaurant):
         FavoriteRestaurant.objects.create(
             customer=another_customer,
             restaurant=restaurant,
         )
 
-        url = reverse("favorite-restaurant-list")
+        url = reverse("favorite-restaurants-list")
         response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        
-        assert len(response.data["results"]) == 1
-        
-        assert response.data["results"][0]["id"] == favorite_restaurant.id
 
-    def test_check_restaurant_favorite_status_true(self,auth_client,restaurant,favorite_restaurant):
-        """Check endpoint should return true if favorited."""
+        assert len(response.data) == 1   
+        assert response.data[0]["id"] == favorite_restaurant.id
 
+    def test_check_restaurant_favorite_status_true(self, auth_client, restaurant, favorite_restaurant):
         url = reverse(
-            "favorite-restaurant-check",
-            kwargs={"restaurant_id": restaurant.id},
+            "favorite-restaurants-check",
+            kwargs={"pk": restaurant.id},
         )
 
         response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-
         assert response.data["is_favorited"] is True
 
-    def test_check_restaurant_favorite_status_false(self,auth_client,restaurant):
-        """Check endpoint should return false if not favorited."""
-
+    def test_check_restaurant_favorite_status_false(self, auth_client, restaurant):
         url = reverse(
-            "favorite-restaurant-check",
-            kwargs={"restaurant_id": restaurant.id},
+            "favorite-restaurants-check",
+            kwargs={"pk": restaurant.id},
         )
 
         response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-
         assert response.data["is_favorited"] is False
 
 @pytest.mark.django_db
 class TestFavoriteMenuItems:
 
-    def test_customer_can_add_menu_item_to_favorites(self,auth_client,menu_item):
-        """Customer should successfully favorite menu item."""
+    def test_customer_can_add_menu_item_to_favorites(self, auth_client, menu_item):
+        url = reverse("favorite-menu-items-list")
 
-        url = reverse(
-            "favorite-menu-item-add",
-            kwargs={"item_id": menu_item.id},
+        response = auth_client.post(
+            url,
+            {"item_id": menu_item.id},
+            format="json"
         )
-
-        response = auth_client.post(url)
 
         assert response.status_code == status.HTTP_201_CREATED
 
@@ -222,26 +205,22 @@ class TestFavoriteMenuItems:
             menu_item=menu_item
         ).exists()
 
-    def test_customer_cannot_add_duplicate_menu_item_favorite(self,auth_client,menu_item,favorite_menu_item):
-        """Duplicate favorite items should be prevented."""
+    def test_customer_cannot_add_duplicate_menu_item_favorite(self, auth_client, menu_item, favorite_menu_item):
+        url = reverse("favorite-menu-items-list")
 
-        url = reverse(
-            "favorite-menu-item-add",
-            kwargs={"item_id": menu_item.id},
+        response = auth_client.post(
+            url,
+            {"item_id": menu_item.id},
+            format="json"
         )
 
-        response = auth_client.post(url)
-
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-
         assert "already" in str(response.data).lower()
 
-    def test_customer_can_remove_menu_item_from_favorites(self,auth_client,menu_item,favorite_menu_item):
-        """Customer should remove menu item from favorites."""
-
+    def test_customer_can_remove_menu_item_from_favorites(self, auth_client, menu_item, favorite_menu_item):
         url = reverse(
-            "favorite-menu-item-add",
-            kwargs={"item_id": menu_item.id},
+            "favorite-menu-items-detail",
+            kwargs={"pk": menu_item.id},
         )
 
         response = auth_client.delete(url)
@@ -252,41 +231,56 @@ class TestFavoriteMenuItems:
             menu_item=menu_item
         ).exists()
 
-    def test_customer_can_view_favorite_menu_items(self,auth_client,favorite_menu_item):
-        """List endpoint should return favorite items."""
-
-        url = reverse("favorite-menu-item-list")
+    def test_customer_can_view_favorite_menu_items(self, auth_client, favorite_menu_item):
+        url = reverse("favorite-menu-items-list")
 
         response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
 
-        assert len(response.data["results"]) >= 1
+        # your view returns plain list (not paginated)
+        assert len(response.data) >= 1
 
-    def test_check_menu_item_favorite_status_true(self,auth_client,menu_item,favorite_menu_item):
-        """Check endpoint should return true."""
+    def test_favorite_menu_items_only_for_current_user(self, auth_client, another_customer, menu_item, favorite_menu_item):
+        FavoriteMenuItem.objects.create(
+            customer=another_customer,
+            menu_item=menu_item,
+        )
 
+        url = reverse("favorite-menu-items-list")
+        response = auth_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+
+        assert len(response.data) == 1
+        assert response.data[0]["id"] == favorite_menu_item.id
+
+    def test_check_menu_item_favorite_status_true(self, auth_client, menu_item, favorite_menu_item):
         url = reverse(
-            "favorite-menu-item-check",
-            kwargs={"item_id": menu_item.id},
+            "favorite-menu-items-check",
+            kwargs={"pk": menu_item.id},
         )
 
         response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-
         assert response.data["is_favorited"] is True
 
-    def test_check_menu_item_favorite_status_false(self,auth_client,menu_item):
-        """Check endpoint should return false."""
-
+    def test_check_menu_item_favorite_status_false(self, auth_client, menu_item):
         url = reverse(
-            "favorite-menu-item-check",
-            kwargs={"item_id": menu_item.id},
+            "favorite-menu-items-check",
+            kwargs={"pk": menu_item.id},
         )
 
         response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-
         assert response.data["is_favorited"] is False
+
+    def test_add_menu_item_requires_item_id(self, auth_client):
+        url = reverse("favorite-menu-items-list")
+
+        response = auth_client.post(url, {}, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "item_id" in response.data["detail"]

@@ -4,10 +4,7 @@ from apps.restaurant.models.menu import MenuItem
 class MenuItemSerializer(serializers.ModelSerializer):
     
     is_favorited = serializers.SerializerMethodField()
-    favorite_count = serializers.IntegerField(
-        source="favorited_by.count",
-        read_only=True,
-    )
+    favorite_count = serializers.IntegerField(read_only=True)
     class Meta:
         model = MenuItem
         fields = ["restaurant", "name", "description", "price", "category", "dietary_info", "image", "is_available", "preparation_time","is_favorited",
