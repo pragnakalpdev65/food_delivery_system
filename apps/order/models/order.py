@@ -7,7 +7,8 @@ from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from apps.core.constants.choices import OrderStatus,ContactPreference
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.db import transaction
+from django.db.models import Max
+from django.db.models.functions import Coalesce
 class Order(TimestampedModel,UUIDModel):
     
     customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name="orders")
@@ -47,16 +48,9 @@ class Order(TimestampedModel,UUIDModel):
     
     def save(self, *args, **kwargs):
         if not self.order_number:
-            last_order = (
-                Order.objects
-                .exclude(order_number__isnull=True)
-                .order_by('-order_number')
-                .first()
-            )
-            if last_order and last_order.order_number:
-                self.order_number = last_order.order_number + 1
-            else:
-                self.order_number = 1
+            self.order_number = Order.objects.aggregate(
+                max_order=Coalesce(Max('order_number'), 0)
+            )['max_order'] + 1
         super().save(*args, **kwargs)
         
 

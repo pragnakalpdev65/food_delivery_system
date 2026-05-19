@@ -76,7 +76,7 @@ class EnvSettings(BaseSettings):
     USE_JSON_LOGGING: bool = False
 
     # Allowed host
-    ALLOWED_HOSTS: Union[List[str], str] = ["*"]
+    ALLOWED_HOSTS: Union[List[str], str] = ["localhost", "127.0.0.1"]
 
     @field_validator("ALLOWED_HOSTS", mode="before")
     @classmethod

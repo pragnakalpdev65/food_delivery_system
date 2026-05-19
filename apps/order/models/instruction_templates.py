@@ -10,8 +10,10 @@ class InstructionTemplate(UUIDModel,TimestampedModel):
     
     class Meta:
         ordering = ['-usage_count', '-created_at']
+        
     def __str__(self):
         return self.text
+    
     def increment_usage(self):
         self.usage_count += 1
         self.save(update_fields=['usage_count'])
