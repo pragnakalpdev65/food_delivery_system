@@ -13,7 +13,7 @@ from channels.auth import AuthMiddlewareStack
 from common.routing import websocket_urlpatterns
 from  common.middleware.auth import JWTAuthMiddleware
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 django_asgi_app = get_asgi_application()
 

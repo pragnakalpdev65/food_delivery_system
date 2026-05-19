@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from apps.restaurant.models.restaurant import Restaurant
 from apps.permissions.order_permissions import IsCustomer
 from apps.core.constants.messages import AuthMessages
+from apps.core.constants.choices import OrderStatus
 
 class CancellationView(APIView):
     permission_classes = [IsAuthenticated, IsCustomer]
@@ -77,7 +78,7 @@ class CancellationView(APIView):
             refund_percentage=refund_percentage,            
         )
         
-        order.status = "cancelled"
+        order.status = OrderStatus.CANCELLED
         order.save(update_fields=["status"])
         
         return Response({
@@ -139,9 +140,12 @@ class CancellationPolicyView(RetrieveUpdateAPIView):
     serializer_class = CancellationPolicySerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
+
     def get_object(self):
-        restaurant = Restaurant.objects.get(
+        restaurant = get_object_or_404(
+            Restaurant,
             id=self.kwargs["restaurant_id"],
+            owner=self.request.user, 
         )
 
         policy, _ = CancellationPolicy.objects.get_or_create(

@@ -9,6 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from apps.restaurant.models import Restaurant
 
 from apps.order.models.order import Order, OrderRating
+from apps.core.constants.choices import OrderStatus
 
 User = get_user_model()
 
@@ -69,7 +70,7 @@ def delivered_order(customer,restaurant):
     return Order.objects.create(
         customer=customer,
         restaurant = restaurant,
-        status="DELIVERED",
+        status=OrderStatus.DELIVERED,
         actual_delivery_time=timezone.now() - timedelta(days=1),
         total_amount=500,
     )
@@ -80,7 +81,7 @@ def pending_order(customer,restaurant):
     return Order.objects.create(
         customer=customer,
         restaurant = restaurant,
-        status="PENDING",
+        status=OrderStatus.PENDING,
         total_amount=300,
     )
 
@@ -90,7 +91,7 @@ def expired_order(customer,restaurant):
     return Order.objects.create(
         customer=customer,
         restaurant = restaurant,
-        status="DELIVERED",
+        status=OrderStatus.DELIVERED,
         actual_delivery_time=timezone.now() - timedelta(days=8),
         total_amount=700,
     )
@@ -229,7 +230,7 @@ class TestGetOrderRating:
         """Customer should retrieve their order rating."""
 
         url = reverse(
-            "get-order-rating",
+            "order-rating",
             kwargs={"order_id": delivered_order.id},
         )
 
@@ -242,7 +243,7 @@ class TestGetOrderRating:
         """Should return 404 if rating does not exist."""
 
         url = reverse(
-            "get-order-rating",
+            "order-rating",
             kwargs={"order_id": delivered_order.id},
         )
 
@@ -257,7 +258,7 @@ class TestUpdateOrderRating:
         """Customer can update rating within 24 hours."""
 
         url = reverse(
-            "update-order-rating",
+            "order-rating",
             kwargs={"order_id": delivered_order.id},
         )
 
@@ -285,7 +286,7 @@ class TestUpdateOrderRating:
         order_rating.save()
 
         url = reverse(
-            "update-order-rating",
+            "order-rating",
             kwargs={"order_id": delivered_order.id},
         )
 

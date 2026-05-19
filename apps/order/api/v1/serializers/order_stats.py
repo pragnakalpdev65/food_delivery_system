@@ -33,20 +33,20 @@ class OrderStatsSerializer(serializers.Serializer):
     def to_representation(self, instance):
         request = self.context["request"]
 
-        orders = Order.objects.filter(customer=request.user).exclude(status=OrderStatus.CANCELLED)
-
-        total_orders = orders.count()
+        base_orders = Order.objects.filter(customer=request.user)
+        active_orders = base_orders.exclude(status=OrderStatus.CANCELLED)
+        total_orders = active_orders.count()
 
         total_spent = (
-            orders.aggregate(total=Sum("total_amount"))["total"] or 0
+            active_orders.aggregate(total=Sum("total_amount"))["total"] or 0
         )
 
         average_order_value = (
-            orders.aggregate(avg=Avg("total_amount"))["avg"] or 0
+            active_orders.aggregate(avg=Avg("total_amount"))["avg"] or 0
         )
 
         favorite_restaurant = (
-            orders.values("restaurant__id", "restaurant__name")
+            active_orders.values("restaurant__id", "restaurant__name")
             .annotate(order_count=Count("id"))
             .order_by("-order_count")
             .first()
@@ -60,11 +60,11 @@ class OrderStatsSerializer(serializers.Serializer):
             .first()
         )
 
-        delivered_count = orders.filter(
+        delivered_count = base_orders.filter(
             status=OrderStatus.DELIVERED
         ).count()
 
-        cancelled_count = orders.filter(
+        cancelled_count = base_orders.filter(
             status=OrderStatus.CANCELLED
         ).count()
 
@@ -95,3 +95,4 @@ class OrderStatsSerializer(serializers.Serializer):
                 "cancelled": cancelled_count,
             },
         }
+        

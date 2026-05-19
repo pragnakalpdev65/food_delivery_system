@@ -47,11 +47,13 @@ INSTALLED_APPS = [
     'apps.order',  
     "channels",  
     "drf_spectacular",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -316,8 +318,8 @@ SIMPLE_JWT = {
 SECURE_SSL_REDIRECT = not DEBUG
 
 # Use secure cookies (only sent over HTTPS)
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 # HTTP Strict Transport Security (HSTS)
 # Tells browsers to only use HTTPS for this domain
