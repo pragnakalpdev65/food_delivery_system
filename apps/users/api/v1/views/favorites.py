@@ -13,7 +13,7 @@ from apps.restaurant.models.menu import MenuItem
 from apps.users.models import FavoriteMenuItem
 from apps.users.api.v1.serializers.favorites import FavoriteMenuItemSerializer
 from apps.core.constants.messages import AuthMessages
-
+from common.api.pagination import FavoritePagination
 
 from rest_framework.viewsets import ViewSet
 from rest_framework.decorators import action
@@ -21,6 +21,7 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 class FavoriteRestaurantViewSet(ViewSet):
     permission_classes = [permissions.IsAuthenticated, IsCustomer]
+    pagination_class = FavoritePagination
 
     def list(self, request):
         queryset = FavoriteRestaurant.objects.select_related("restaurant").filter(
@@ -80,6 +81,7 @@ class FavoriteRestaurantViewSet(ViewSet):
         return Response({"is_favorited": is_favorited})
 class FavoriteMenuItemViewSet(ViewSet):
     permission_classes = [permissions.IsAuthenticated, IsCustomer]
+    pagination_class = FavoritePagination
 
     def _get_item(self, item_id):
         if not item_id:

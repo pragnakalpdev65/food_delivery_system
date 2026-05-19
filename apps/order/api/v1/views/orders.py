@@ -151,9 +151,7 @@ class OrderViewSet(ModelViewSet):
             )
 
         driver = CustomUser.objects.filter(id=driver_id).first()
-        normalized_driver_type = (
-            driver.user_type.strip().lower().replace(" ", "_")
-        ) if driver else None
+        normalized_driver_type = driver.user_type
 
         if not driver or normalized_driver_type not in ("driver", "delivery_driver"):
             return Response(
@@ -268,7 +266,7 @@ class OrderViewSet(ModelViewSet):
         description="Get statistics for the authenticated user's orders",
         responses=OrderStatsSerializer,
     )        
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=['get'], url_path='order_stats')
     def order_stats(self, request):
         serializer = OrderStatsSerializer(
             instance={}, 

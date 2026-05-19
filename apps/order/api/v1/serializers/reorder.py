@@ -79,7 +79,6 @@ class ReorderSerializer(serializers.Serializer):
         delivery_fee = restaurant.delivery_fee
         tax_rate = Decimal(str(restaurant.tax_rate or 0.05))
         tax = subtotal * tax_rate
-
         new_order = Order.objects.create(
             customer=request.user,
             restaurant=restaurant,
@@ -89,9 +88,6 @@ class ReorderSerializer(serializers.Serializer):
             delivery_fee=delivery_fee,
             tax=tax,
         )
-
-        new_order.calculate_total()
-        new_order.save(update_fields=["total"])
 
         order_items = [
             OrderItem(
@@ -104,6 +100,10 @@ class ReorderSerializer(serializers.Serializer):
         ]
 
         OrderItem.objects.bulk_create(order_items)
+
+        new_order.calculate_total()
+        new_order.save(update_fields=["total"])
+
 
         return {
             "order": OrderSerializer(

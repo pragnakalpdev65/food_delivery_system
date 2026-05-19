@@ -25,10 +25,32 @@ class IsRestaurantOwner(BasePermission):
             bool: True if the user is authenticated and is a restaurant owner, 
                   False otherwise.
         """
+        if request.method in permissions.SAFE_METHODS:
+            return True
+            
         return (
-            request.user.is_authenticated
-            and request.user.user_type == UserType.RESTAURANT_OWNER
+            request.user.is_authenticated and 
+            request.user.user_type == UserType.RESTAURANT_OWNER
         )
+    
+    def has_object_permission(self, request, view, obj):
+        """
+        Check if the user owns the restaurant for this menu item.
+        
+        Args:
+            request: The incoming HTTP request.
+            view: The view being accessed.
+            obj: The MenuItem object being accessed.
+        
+        Returns:
+            bool: True if user owns the restaurant, False otherwise.
+        """
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # For write operations, user must own the restaurant
+        return obj.restaurant.owner == request.user
+
 class IsOwnerOrReadOnly(BasePermission):
     """
     Custom permission to only allow restaurant owners to edit or create objects.

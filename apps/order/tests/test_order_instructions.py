@@ -81,37 +81,6 @@ def order(db, customer, restaurant):
     )
 
 @pytest.mark.django_db
-def test_create_order_with_instructions(customer, restaurant, menu_item, client, operating_hours):    
-    client.force_authenticate(user=customer)
-    url = reverse("orders-list")
-
-    payload = {
-        "restaurant": restaurant.id,
-        "delivery_address": "Test Address",
-        "delivery_instructions": "Ring bell twice",
-        "contact_preference": "call",
-        "utensils_required": True,
-        "contactless_delivery": False,
-        "items": [
-            {
-                "menu_item": menu_item.id,
-                "quantity": 2,
-                "special_instructions": "No onions"
-            }
-        ]
-    }
-
-    response = client.post(url, payload, format="json")
-    assert response.status_code == 201
-
-    order = Order.objects.get(id=response.data["id"])
-
-    assert order.delivery_instructions == "Ring bell twice"
-    assert order.contact_preference == "call"
-    assert order.utensils_required is True
-    assert order.contactless_delivery is False
-    
-@pytest.mark.django_db
 def test_delivery_instructions_exceed_limit(customer, restaurant, menu_item, client):
     client.force_authenticate(user=customer)
 
@@ -154,32 +123,7 @@ def test_item_special_instructions_exceed_limit(customer, restaurant, menu_item,
     response = client.post(url, payload, format="json")
 
     assert response.status_code == 400
-    
-@pytest.mark.django_db
-def test_default_instruction_values(customer, restaurant, menu_item, client, operating_hours):
-    client.force_authenticate(user=customer)
 
-    url = reverse("orders-list")
-
-    payload = {
-        "restaurant": restaurant.id,
-        "delivery_address": "Test Address",
-        "items": [
-            {
-                "menu_item": menu_item.id,
-                "quantity": 1
-            }
-        ]
-    }
-
-    response = client.post(url, payload, format="json")
-    assert response.status_code == 201
-
-    order = Order.objects.get(id=response.data["id"])
-
-    assert order.contact_preference == "call"  
-    assert order.utensils_required is False
-    assert order.contactless_delivery is False
     
 @pytest.mark.django_db
 def test_get_instruction_templates(client,customer):

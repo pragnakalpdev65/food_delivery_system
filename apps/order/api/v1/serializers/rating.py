@@ -41,7 +41,7 @@ class OrderRatingSerializer(serializers.ModelSerializer):
                     AuthMessages.RATE_OWN_ORDER
                 )
 
-            if order.status.lower() != OrderStatus.DELIVERED:
+            if order.status!= OrderStatus.DELIVERED:
                 raise serializers.ValidationError(
                     AuthMessages.RATE_DELIVERED_ORDER
                 )
@@ -111,13 +111,18 @@ class OrderRatingSerializer(serializers.ModelSerializer):
 
         restaurant = rating.order.restaurant
 
-        if hasattr(restaurant, "update_average_rating"):
-            restaurant.update_average_rating()
+        driver_user = rating.order.driver
 
-        driver = rating.order.driver
-
-        if driver and hasattr(driver, "update_average_rating"):
-            driver.update_average_rating()
+        if driver_user and hasattr(driver_user, "driverprofile"):
+            driver_profile = driver_user.driverprofile
+            
+            if hasattr(driver_profile, "update_average_rating"):
+                driver_profile.update_average_rating()
+        
+        NotificationService.notify_restaurant_rating(
+            restaurant=restaurant,
+            rating=rating
+        )
 
         return rating
 

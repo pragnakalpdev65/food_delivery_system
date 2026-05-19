@@ -6,8 +6,14 @@ from rest_framework.permissions import IsAuthenticated
 
 class InstructionTemplateListView(generics.ListAPIView):
     serializer_class = InstructionTemplateSerializer
-    permission_classes = [IsAuthenticated] 
-    pagination_class = None 
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
-        return InstructionTemplate.objects.filter(is_active=True).order_by('-usage_count')
+        queryset = InstructionTemplate.objects.filter(is_active=True)
+
+        category = self.request.query_params.get("category")
+        if category:
+            queryset = queryset.filter(category=category)
+
+        return queryset.order_by('-usage_count')
