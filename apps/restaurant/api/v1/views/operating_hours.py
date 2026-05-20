@@ -64,7 +64,11 @@ class SpecialHoursListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
 
-        restaurant = Restaurant.objects.get(pk=self.kwargs['pk'])
+        restaurant = get_object_or_404(
+            Restaurant,
+            pk=self.kwargs['pk'],
+            owner=self.request.user
+        )
         serializer.save(restaurant=restaurant)
 
 
