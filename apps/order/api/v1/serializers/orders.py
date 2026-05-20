@@ -64,9 +64,6 @@ class OrderSerializer(serializers.ModelSerializer):
         items_data = validated_data.pop('items')
         user = self.context['request'].user
         
-        # if not RestaurantAvailabilityService.is_currently_open(restaurant.id):
-        #     raise serializers.ValidationError({"error": "Restaurant is currently closed"})
-
         order = Order.objects.create(
             customer=user,
             estimated_delivery_time=timezone.now() + timedelta(minutes=30),

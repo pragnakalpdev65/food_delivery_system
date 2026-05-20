@@ -45,7 +45,7 @@ class OperatingHoursSerializer(serializers.ModelSerializer):
                     'closing_time': AuthMessages.CLOSING_TIME_REQUIRED
                 })
 
-            if opening_time >= closing_time:
+            if opening_time == closing_time:
                 raise serializers.ValidationError({
                     'closing_time': AuthMessages.CLOSING_TIME_VALIDATION
                 })
@@ -81,7 +81,7 @@ class SpecialHoursSerializer(serializers.ModelSerializer):
                     )
                 })
 
-            if opening_time >= closing_time:
+            if opening_time == closing_time:
                 raise serializers.ValidationError({
                     'closing_time': (
                         AuthMessages.CLOSING_TIME_VALIDATION

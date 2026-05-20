@@ -52,3 +52,13 @@ class DriverProfile(TimestampedModel,UUIDModel):
             "total_deliveries": self.orders.filter(status="DELIVERED").count(),
             "active_deliveries": self.orders.filter(status__in=["ASSIGNED", "PICKED"]).count(),
         }
+        
+    def update_average_rating(self):
+        avg = (
+            self.user.driver_orders
+            .filter(rating__isnull=False)
+            .aggregate(avg=Avg("rating__overall_rating"))["avg"]
+        )
+
+        self.average_rating = round(avg or 0, 2)
+        self.save(update_fields=["average_rating"])
