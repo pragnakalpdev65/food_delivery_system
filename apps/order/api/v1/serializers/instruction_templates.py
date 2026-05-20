@@ -5,7 +5,8 @@ class InstructionTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstructionTemplate
         fields = ['id', 'category', 'text']
-        def validate(self, attrs):
+        
+    def validate(self, attrs):
             template_id = self.initial_data.get("instruction_template_id")
 
             if template_id:
