@@ -150,9 +150,7 @@ class OrderViewSet(ModelViewSet):
             )
 
         driver = CustomUser.objects.filter(id=driver_id).first()
-        normalized_driver_type = driver.user_type
-
-        if not driver or normalized_driver_type not in ("driver", "delivery_driver"):
+        if driver.user_type != UserType.DELIVERY_DRIVER :
             return Response(
                 {"error":AuthMessages.DRIVER_NOT_FOUND,
                  "code" : ErrorCodes.DRIVER_NOT_FOUND},
