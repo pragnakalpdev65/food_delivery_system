@@ -8,6 +8,7 @@ from apps.users.api.v1.views.favorites import (
     FavoriteRestaurantViewSet,
     FavoriteMenuItemViewSet,
 )
+from apps.users.api.v1.views.order_stats import UserOrderStatsView
 
 router = DefaultRouter()
 router.register(
@@ -38,6 +39,8 @@ urlpatterns = [
     path("profile/email/change-request/", UpdateEmailView.as_view(), name="email-change-request"),
     path("profile/email/current-confirm/", CurrentEmailConfirmView.as_view(), name="current-email-confirm"),
     path("profile/email/change-confirm/", ConfirmEmailChangeView.as_view(), name="confirm-email-change"),
+
+    path("order-stats/", UserOrderStatsView.as_view(), name="order-stats"),
 ]
 
 urlpatterns += router.urls

@@ -7,50 +7,29 @@ from apps.core.constants.choices import UserType
 from apps.restaurant.models.restaurant import Restaurant
 class IsRestaurantOwner(BasePermission):
     """
-    Custom permission to verify user is a restaurant owner.
-    
-    This permission checks if the user is authenticated and has 
-    the canonical restaurant_owner user type.
+    Permission to allow only restaurant owners to perform write operations.
+    Read-only access is allowed for all users.
     """
 
     def has_permission(self, request, view):
-        """
-        Check if the request has the necessary permissions.
-
-        Args:
-            request: The incoming HTTP request.
-            view: The view being accessed.
-
-        Returns:
-            bool: True if the user is authenticated and is a restaurant owner, 
-                  False otherwise.
-        """
         if request.method in permissions.SAFE_METHODS:
             return True
-            
+
         return (
-            request.user.is_authenticated and 
-            request.user.user_type == UserType.RESTAURANT_OWNER
+            request.user.is_authenticated
+            and request.user.user_type == UserType.RESTAURANT_OWNER
         )
-    
+
     def has_object_permission(self, request, view, obj):
-        """
-        Check if the user owns the restaurant for this menu item.
-        
-        Args:
-            request: The incoming HTTP request.
-            view: The view being accessed.
-            obj: The MenuItem object being accessed.
-        
-        Returns:
-            bool: True if user owns the restaurant, False otherwise.
-        """
         if request.method in permissions.SAFE_METHODS:
             return True
-        
-        # For write operations, user must own the restaurant
-        return obj.restaurant.owner == request.user
 
+        restaurant = getattr(obj, "restaurant", None)
+
+        if not restaurant:
+            return False
+
+        return restaurant.owner == request.user
 class IsOwnerOrReadOnly(BasePermission):
     """
     Custom permission to only allow restaurant owners to edit or create objects.
