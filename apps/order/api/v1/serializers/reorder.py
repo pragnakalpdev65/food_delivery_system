@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import timedelta
 
 from django.db import transaction
@@ -10,7 +10,8 @@ from apps.order.models.order import Order, OrderItem
 from apps.order.api.v1.serializers.orders import OrderSerializer
 from apps.core.constants.messages import AuthMessages
 from apps.restaurant.services.availability_service import RestaurantAvailabilityService
-
+from apps.core.constants.error_codes import ErrorCodes
+from apps.order.services.websocket_services import WebSocketService
 
 class ReorderSerializer(serializers.Serializer):
 
@@ -20,6 +21,7 @@ class ReorderSerializer(serializers.Serializer):
         original_order = self.context["order"]
 
         restaurant = original_order.restaurant
+
         if not RestaurantAvailabilityService.is_currently_open(restaurant.id):
             raise serializers.ValidationError(
                 {"error": AuthMessages.RESTAURANT_CLOSED}
@@ -72,13 +74,28 @@ class ReorderSerializer(serializers.Serializer):
         )
 
         subtotal = Decimal("0.00")
-
         for item in valid_items:
             subtotal += item["price"] * item["quantity"]
 
-        delivery_fee = restaurant.delivery_fee
+        minimum_order = getattr(restaurant, "minimum_order", None)
+        if minimum_order and subtotal < minimum_order:
+            raise serializers.ValidationError({
+                "error": AuthMessages.MINIMUM_ORDER_NOT_MET,
+                "minimum_order": minimum_order,
+                "current_subtotal": subtotal,
+            })
+
+        delivery_fee = restaurant.delivery_fee or Decimal("0.00")
         tax_rate = Decimal(str(restaurant.tax_rate or 0.05))
-        tax = subtotal * tax_rate
+
+        tax = (subtotal * tax_rate).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+
+        total = (subtotal + tax + delivery_fee).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+
         new_order = Order.objects.create(
             customer=request.user,
             restaurant=restaurant,
@@ -87,6 +104,7 @@ class ReorderSerializer(serializers.Serializer):
             subtotal=subtotal,
             delivery_fee=delivery_fee,
             tax=tax,
+            total=total,
         )
 
         order_items = [
@@ -101,9 +119,31 @@ class ReorderSerializer(serializers.Serializer):
 
         OrderItem.objects.bulk_create(order_items)
 
-        new_order.calculate_total()
-        new_order.save(update_fields=["total"])
+        WebSocketService.send_customer_update(
+            user_id=new_order.customer.id,
+            data={
+                "event": "order_created",
+                "order_id": str(new_order.id),
+                "message": "Your reorder has been placed successfully",
+            }
+        )
 
+        WebSocketService.send_restaurant_update(
+            restaurant_id=new_order.restaurant.id,
+            data={
+                "event": "new_order",
+                "order_id": str(new_order.id),
+                "message": "New reorder received",
+            }
+        )
+
+        WebSocketService.send_order_update(
+            order_id=new_order.id,
+            data={
+                "event": "order_created",
+                "status": new_order.status,
+            }
+        )
 
         return {
             "order": OrderSerializer(

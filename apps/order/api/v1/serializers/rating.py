@@ -113,12 +113,9 @@ class OrderRatingSerializer(serializers.ModelSerializer):
 
         driver_user = rating.order.driver
 
-        if driver_user and hasattr(driver_user, "driverprofile"):
-            driver_profile = driver_user.driverprofile
+        if driver_user and hasattr(driver_user, "driver_profile"):
+            driver_user.driver_profile.update_average_rating()
             
-            if hasattr(driver_profile, "update_average_rating"):
-                driver_profile.update_average_rating()
-        
         NotificationService.notify_restaurant_rating(
             restaurant=restaurant,
             rating=rating
@@ -154,9 +151,9 @@ class OrderRatingSerializer(serializers.ModelSerializer):
         if hasattr(restaurant, "update_average_rating"):
             restaurant.update_average_rating()
 
-        driver = rating.order.driver
+        driver_user = rating.order.driver
 
-        if driver and hasattr(driver, "update_average_rating"):
-            driver.update_average_rating()
+        if driver_user and hasattr(driver_user, "driver_profile"):
+            driver_user.driver_profile.update_average_rating()
 
         return rating

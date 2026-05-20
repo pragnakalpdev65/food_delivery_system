@@ -25,7 +25,6 @@ from drf_spectacular.utils import extend_schema, OpenApiExample
 from apps.core.constants.choices import OrderStatus
 from common.api.filters.order_filters import OrderFilter
 from django.utils import timezone
-from apps.order.api.v1.serializers.order_stats import OrderStatsSerializer
 
 VALID_TRANSITIONS = {
     OrderStatus.PENDING: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
@@ -262,14 +261,3 @@ class OrderViewSet(ModelViewSet):
             order_data,
             status=status.HTTP_201_CREATED
         )
-    @extend_schema(
-        description="Get statistics for the authenticated user's orders",
-        responses=OrderStatsSerializer,
-    )        
-    @action(detail=False, methods=['get'], url_path='order_stats')
-    def order_stats(self, request):
-        serializer = OrderStatsSerializer(
-            instance={}, 
-            context={"request": request}
-        )
-        return Response(serializer.data)
