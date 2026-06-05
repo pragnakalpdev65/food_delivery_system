@@ -9,10 +9,13 @@ from rest_framework.views import APIView
 from apps.users.models import CustomUser
 from apps.users.services.email_services import AuthEmailService
 from apps.core.constants.messages import AuthMessages
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiTypes
 
 @extend_schema(
+    tags=["Auth"],
     description="Register a new user",
+    request=UserRegistrationSerializer,
+    responses=UserRegistrationResponseSerializer,
     examples=[
         OpenApiExample(
             "Register",
@@ -66,6 +69,11 @@ class UserRegistrationView(APIView):
         response_serializer = UserRegistrationResponseSerializer(user)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
+@extend_schema(
+    tags=["Auth"],
+    description="Verify a user's email address",
+    responses=OpenApiTypes.OBJECT,
+)
 class VerifyEmailView(APIView):
     """
     API endpoint for verifying a user's email address.
@@ -89,6 +97,12 @@ class VerifyEmailView(APIView):
         return Response(AuthMessages.VERIFIED_SUCCESS)
     
     
+@extend_schema(
+    tags=["Auth"],
+    description="Resend the email verification link for an unverified user.",
+    request=ResendVerificationSerializer,
+    responses=OpenApiTypes.OBJECT,
+)
 class ResendVerificationView(APIView):
     """
     API endpoint to resend verification email.

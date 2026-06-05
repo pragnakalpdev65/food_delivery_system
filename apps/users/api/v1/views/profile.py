@@ -17,7 +17,7 @@ from apps.users.api.v1.serializers.profile import (
 )
 from apps.users.models import CustomUser
 from apps.users.models.profile import CustomerProfile, Address, DriverProfile
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiTypes, OpenApiExample
 
 
 class CustomerProfileView(APIView):
@@ -34,11 +34,11 @@ class CustomerProfileView(APIView):
     permission_classes = [IsAuthenticated]
     
     @extend_schema(
-    tags=["Users"],
-    summary="User Profile",
-    description="Get logged-in user details"
+        tags=["Users"],
+        summary="Get user profile",
+        description="Get logged-in customer profile details",
+        responses=CustomerProfileSerializer,
     )
-
     def get(self, request):
         """
         Fetch the authenticated user's customer profile.
@@ -58,6 +58,13 @@ class CustomerProfileView(APIView):
         serializer = CustomerProfileSerializer(profile)
         return Response(serializer.data)
 
+    @extend_schema(
+        tags=["Users"],
+        summary="Update user profile",
+        description="Update the logged-in customer's profile details",
+        request=CustomerProfileUpdateSerializer,
+        responses=CustomerProfileSerializer,
+    )
     def put(self, request):
         """
         Update the authenticated user's customer profile.
@@ -100,6 +107,12 @@ class AddressView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["Users"],
+        summary="List user addresses",
+        description="Return all addresses associated with the authenticated customer's profile.",
+        responses=AddressSerializer(many=True),
+    )
     def get(self, request):
         """
         Fetch all addresses of the authenticated user's profile.
@@ -112,6 +125,13 @@ class AddressView(APIView):
         serializer = AddressSerializer(addresses, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        tags=["Users"],
+        summary="Create an address",
+        description="Create a new address for the authenticated customer.",
+        request=AddressSerializer,
+        responses=AddressSerializer,
+    )
     def post(self, request):
         """
         Create a new address for the authenticated user.
@@ -157,6 +177,12 @@ class AddressDetailView(APIView):
         self.check_object_permissions(request, address)
         return address
 
+    @extend_schema(
+        tags=["Users"],
+        summary="Get address details",
+        description="Retrieve a specific address belonging to the authenticated customer.",
+        responses=AddressSerializer,
+    )
     def get(self, request, pk):
         """
         Retrieve a specific address by ID.
@@ -174,6 +200,13 @@ class AddressDetailView(APIView):
         serializer = AddressSerializer(address)
         return Response(serializer.data)
 
+    @extend_schema(
+        tags=["Users"],
+        summary="Update address",
+        description="Update an existing address for the authenticated customer.",
+        request=AddressSerializer,
+        responses=AddressSerializer,
+    )
     def put(self, request, pk):
         """
         Update a specific address.
@@ -197,6 +230,12 @@ class AddressDetailView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        tags=["Users"],
+        summary="Delete address",
+        description="Delete a specific address from the authenticated customer's profile.",
+        responses=OpenApiTypes.OBJECT,
+    )
     def delete(self, request, pk):
         """
         Delete a specific address.
@@ -231,6 +270,12 @@ class DriverProfileView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["Users"],
+        summary="Get driver profile",
+        description="Fetch the authenticated driver's profile details.",
+        responses=DriverProfileSerializer,
+    )
     def get(self, request):
         """
         Fetch the authenticated user's driver profile.
@@ -249,6 +294,13 @@ class DriverProfileView(APIView):
         serializer = DriverProfileSerializer(profile)
         return Response(serializer.data)
 
+    @extend_schema(
+        tags=["Users"],
+        summary="Update driver profile",
+        description="Update the authenticated driver's profile details.",
+        request=DriverProfileSerializer,
+        responses=DriverProfileSerializer,
+    )
     def put(self, request):
         """
         Update the authenticated user's driver profile.
@@ -283,6 +335,11 @@ class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
     queryset = CustomUser.objects.all()
 
+    @extend_schema(
+        tags=["Users"],
+        request=ChangePasswordSerializer,
+        responses=OpenApiTypes.OBJECT,
+    )
     def post(self, request):
         """
         Handle password change request for authenticated user.
@@ -315,6 +372,11 @@ class UpdateEmailView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["Users"],
+        request=UpdateEmailSerializer,
+        responses=OpenApiTypes.OBJECT,
+    )
     def post(self, request):
         """
         Initiate email change request.
@@ -345,6 +407,11 @@ class CurrentEmailConfirmView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["Users"],
+        request=CurrentEmailConfirmSerializer,
+        responses=OpenApiTypes.OBJECT,
+    )
     def get(self, request):
         """
         Confirm old email using token from query params.
@@ -371,11 +438,17 @@ class ConfirmEmailChangeView(APIView):
         - User clicks link sent to new email
         - Validates new email token
         - Ensures old email already confirmed
+
         - Updates user's email
         - Invalidates existing sessions (security)
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["Users"],
+        request=ConfirmEmailChangeSerializer,
+        responses=OpenApiTypes.OBJECT,
+    )
     def post(self, request):
         """
         Confirm new email and complete email update process.

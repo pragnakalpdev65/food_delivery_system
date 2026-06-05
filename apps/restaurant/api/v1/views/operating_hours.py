@@ -2,7 +2,7 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiTypes
 from apps.restaurant.models.restaurant import Restaurant
 from apps.restaurant.models.operating_hours import (
     OperatingHours,
@@ -18,6 +18,12 @@ from apps.permissions.restaurant_permissions import IsRestaurantOwner
 from django.shortcuts import get_object_or_404
 
 
+@extend_schema(
+    tags=["Restaurants"],
+    description="List and create operating hours for a restaurant",
+    request=OperatingHoursSerializer,
+    responses=OperatingHoursSerializer(many=True),
+)
 class OperatingHoursListCreateView(generics.ListCreateAPIView):
 
     serializer_class = OperatingHoursSerializer
@@ -38,6 +44,12 @@ class OperatingHoursListCreateView(generics.ListCreateAPIView):
         serializer.save(restaurant=restaurant)
 
 
+@extend_schema(
+    tags=["Restaurants"],
+    description="Update operating hours for a restaurant",
+    request=OperatingHoursSerializer,
+    responses=OperatingHoursSerializer,
+)
 class OperatingHoursUpdateView(generics.UpdateAPIView):
 
     serializer_class = OperatingHoursSerializer
@@ -51,6 +63,12 @@ class OperatingHoursUpdateView(generics.UpdateAPIView):
             restaurant_id=self.kwargs['pk']
         )
 
+@extend_schema(
+    tags=["Restaurants"],
+    description="List and create special hours for a restaurant",
+    request=SpecialHoursSerializer,
+    responses=SpecialHoursSerializer(many=True),
+)
 class SpecialHoursListCreateView(generics.ListCreateAPIView):
 
     serializer_class = SpecialHoursSerializer
@@ -72,6 +90,11 @@ class SpecialHoursListCreateView(generics.ListCreateAPIView):
         serializer.save(restaurant=restaurant)
 
 
+@extend_schema(
+    tags=["Restaurants"],
+    description="Delete a special hours entry for a restaurant",
+    responses=OpenApiTypes.OBJECT,
+)
 class SpecialHoursDeleteView(generics.DestroyAPIView):
 
     permission_classes = [IsAuthenticated,IsRestaurantOwner]
@@ -85,6 +108,11 @@ class SpecialHoursDeleteView(generics.DestroyAPIView):
         )
 
 
+@extend_schema(
+    tags=["Restaurants"],
+    description="Check whether a restaurant is currently open",
+    responses=RestaurantAvailabilitySerializer,
+)
 class RestaurantIsOpenView(generics.GenericAPIView):
 
     serializer_class = RestaurantAvailabilitySerializer
@@ -104,6 +132,11 @@ class RestaurantIsOpenView(generics.GenericAPIView):
         serializer = self.get_serializer(data)
         return Response(serializer.data)
 
+@extend_schema(
+    tags=["Restaurants"],
+    description="Get the next opening time for a restaurant",
+    responses=RestaurantAvailabilitySerializer,
+)
 class RestaurantNextOpeningView(generics.GenericAPIView):
 
     serializer_class = RestaurantAvailabilitySerializer

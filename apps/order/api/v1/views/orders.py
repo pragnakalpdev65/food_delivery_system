@@ -21,7 +21,7 @@ from apps.restaurant.services.availability_service import RestaurantAvailability
 from apps.core.constants.error_codes import ErrorCodes
 from apps.core.constants.choices import UserType
 from apps.users.models import CustomUser
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiTypes
 from apps.core.constants.choices import OrderStatus
 from common.api.filters.order_filters import OrderFilter
 from django.utils import timezone
@@ -37,6 +37,7 @@ VALID_TRANSITIONS = {
 }
 
 @extend_schema(
+    tags=["Orders"],
     description="""
 WebSocket Endpoints:
 
@@ -50,7 +51,35 @@ Events:
 - driver_assigned
 """
 )
-
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Orders"],
+        description="List orders visible to the authenticated user",
+        responses=OrderSerializer(many=True),
+    ),
+    retrieve=extend_schema(
+        tags=["Orders"],
+        description="Retrieve a specific order",
+        responses=OrderSerializer,
+    ),
+    update=extend_schema(
+        tags=["Orders"],
+        description="Update an order",
+        request=OrderSerializer,
+        responses=OrderSerializer,
+    ),
+    partial_update=extend_schema(
+        tags=["Orders"],
+        description="Partially update an order",
+        request=OrderSerializer,
+        responses=OrderSerializer,
+    ),
+    destroy=extend_schema(
+        tags=["Orders"],
+        description="Delete an order",
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
 class OrderViewSet(ModelViewSet):
     serializer_class = OrderSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -61,26 +90,6 @@ class OrderViewSet(ModelViewSet):
     ordering_fields = ['created_at','total_amount','status']
 
     ordering = ['-created_at']
-    @extend_schema(
-        description="Create a new order (Customer only)",
-        request=OrderSerializer,
-        responses=OrderSerializer,
-        examples=[
-            OpenApiExample(
-                "Create Order Example",
-                value={
-                    "restaurant": "uuid",
-                    "delivery_address": "123 Main Street",
-                    "items": [
-                        {
-                            "menu_item": "uuid",
-                            "quantity": 2
-                        }
-                    ]
-                },
-            )
-        ],
-    )
 
     def get_queryset(self):
         user = self.request.user
@@ -116,6 +125,27 @@ class OrderViewSet(ModelViewSet):
 
         return [IsAuthenticated()]
 
+    @extend_schema(
+        tags=["Orders"],
+        description="Create a new order (Customer only)",
+        request=OrderSerializer,
+        responses=OrderSerializer,
+        examples=[
+            OpenApiExample(
+                "Create Order Example",
+                value={
+                    "restaurant": "uuid",
+                    "delivery_address": "123 Main Street",
+                    "items": [
+                        {
+                            "menu_item": "uuid",
+                            "quantity": 2
+                        }
+                    ]
+                },
+            )
+        ],
+    )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -135,7 +165,23 @@ class OrderViewSet(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     @extend_schema(
+        tags=["Orders"],
         description="Assign a driver to the order (Restaurant owner only)",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "driver_id": {"type": "string"}
+                },
+                "required": ["driver_id"],
+            }
+        },
+        responses={
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"}
+            },
+        },
     )
     @action(detail=True, methods=['post'])
     def assign_driver(self, request, pk=None):
@@ -178,7 +224,24 @@ class OrderViewSet(ModelViewSet):
         return Response({"message":AuthMessages.ASSIGN_SUCCESS })
 
     @extend_schema(
+        tags=["Orders"],
         description="Update order status based on allowed transitions",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "status": {"type": "string"}
+                },
+                "required": ["status"],
+            }
+        },
+        responses={
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"},
+                "status": {"type": "string"}
+            },
+        },
     )    
     @action(detail=True, methods=['post'])
     def update_status(self, request, pk=None):
@@ -221,7 +284,14 @@ class OrderViewSet(ModelViewSet):
         )
      
     @extend_schema(
+        tags=["Orders"],
         description="Get estimated delivery time for the order",
+        responses={
+            "type": "object",
+            "properties": {
+                "estimated_delivery_time": {"type": "string", "format": "date-time"}
+            }
+        },
     ) 
     @action(detail=True, methods=['get'])
     def eta(self, request, pk=None):
@@ -236,6 +306,7 @@ class OrderViewSet(ModelViewSet):
         })
     
     @extend_schema(
+        tags=["Orders"],
         description="Reorder from a previous order",
         responses=ReorderSerializer
     )

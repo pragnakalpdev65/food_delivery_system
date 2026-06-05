@@ -11,6 +11,7 @@ from apps.core.constants.messages import AuthMessages
 from common.api.pagination import MyRatingsPagination
 
 @extend_schema(
+    tags=["Orders"],
     description="Create a rating for a specific order",
     request=OrderRatingSerializer,
     responses=OrderRatingSerializer,
@@ -48,6 +49,7 @@ class CreateOrderRatingView(generics.CreateAPIView):
 
 
 @extend_schema(
+    tags=["Orders"],
     description="Retrieve or update your rating for a specific order",
     request=OrderRatingSerializer,
     responses=OrderRatingSerializer,
@@ -77,6 +79,7 @@ class OrderRatingDetailView(generics.RetrieveUpdateAPIView):
             raise PermissionDenied(AuthMessages.EDIT_RATING_PERMISSIONS)
         return super().update(request, *args, **kwargs)
 @extend_schema(
+    tags=["Orders"],
     description="List all ratings created by the authenticated user",
     responses=OrderRatingSerializer(many=True),
 )

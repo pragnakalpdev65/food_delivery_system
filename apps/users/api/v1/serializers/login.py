@@ -47,6 +47,15 @@ class LoginSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class LoginResponseSerializer(serializers.Serializer):
+    """
+    Serializer for login response tokens.
+    """
+
+    access = serializers.CharField(read_only=True)
+    refresh = serializers.CharField(read_only=True)
+
+
 class LogoutSerializer(serializers.ModelSerializer):
     """
     Serializer responsible for handling user logout.
