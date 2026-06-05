@@ -5,6 +5,7 @@ from rest_framework import generics
 from drf_spectacular.utils import extend_schema
 
 @extend_schema(
+    tags=["Orders"],
     description="Get statistics for the authenticated user's orders",
     responses=OrderStatsSerializer,
 )        

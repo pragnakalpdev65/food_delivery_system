@@ -18,6 +18,7 @@ from apps.core.constants.choices import OrderStatus
 class CancellationView(APIView):
     permission_classes = [IsAuthenticated, IsCustomer]
     @extend_schema(
+        tags=["Orders"],
         description="Cancel an order and get refund details",
         parameters=[
             OpenApiParameter(
@@ -90,6 +91,7 @@ class CancellationView(APIView):
 
 
     @extend_schema(
+        tags=["Orders"],
         description="Check if an order can be cancelled and preview refund details",
         parameters=[
             OpenApiParameter(
@@ -125,6 +127,7 @@ class CancellationView(APIView):
         })
 
 @extend_schema(
+    tags=["Orders"],
     description="Retrieve or update cancellation policy for a restaurant",
     parameters=[
         OpenApiParameter(

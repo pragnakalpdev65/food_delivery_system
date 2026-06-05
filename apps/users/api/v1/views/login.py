@@ -5,9 +5,9 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.core.constants.messages import AuthMessages
-from apps.users.api.v1.serializers.login import LoginSerializer, LogoutSerializer
+from apps.users.api.v1.serializers.login import LoginSerializer, LoginResponseSerializer, LogoutSerializer
 from apps.users.services.auth_services import LoginService
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import OpenApiExample, OpenApiTypes, extend_schema
 
 @extend_schema(
     tags=["Auth"],
@@ -18,11 +18,13 @@ Login and receive JWT tokens
 Use token:
 Authorization: Bearer <access_token>
 """,
+    request=LoginSerializer,
+    responses=LoginResponseSerializer,
     examples=[
         OpenApiExample(
             "Login",
             value={
-                "email": "user@test.com",
+                "username": "user@test.com",
                 "password": "StrongPass123!"
             }
         )
@@ -49,6 +51,11 @@ class LogoutView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["Auth"],
+        request=LogoutSerializer,
+        responses=OpenApiTypes.OBJECT,
+    )
     def post(self, request):
         serializer = LogoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

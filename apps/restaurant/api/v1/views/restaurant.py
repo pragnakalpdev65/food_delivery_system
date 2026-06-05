@@ -9,7 +9,8 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
     OpenApiParameter,
-    OpenApiExample
+    OpenApiExample,
+    OpenApiTypes,
 )
 
 from apps.restaurant.models.restaurant import Restaurant
@@ -60,6 +61,23 @@ from django.db.models import Count
                 },
             )
         ],
+        tags=["Restaurants"],
+    ),
+    update=extend_schema(
+        description="Update an existing restaurant",
+        request=RestaurantSerializer,
+        responses=RestaurantSerializer,
+        tags=["Restaurants"],
+    ),
+    partial_update=extend_schema(
+        description="Partially update an existing restaurant",
+        request=RestaurantSerializer,
+        responses=RestaurantSerializer,
+        tags=["Restaurants"],
+    ),
+    destroy=extend_schema(
+        description="Delete a restaurant",
+        responses=OpenApiTypes.OBJECT,
         tags=["Restaurants"],
     ),
 )
