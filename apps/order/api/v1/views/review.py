@@ -8,6 +8,7 @@ from drf_spectacular.utils import extend_schema, OpenApiExample
 from rest_framework.generics import ListCreateAPIView
 
 @extend_schema(
+    tags=["Orders"],
     description="Create review for delivered order (Customer only)",
     request=ReviewSerializer,
     responses=ReviewSerializer,

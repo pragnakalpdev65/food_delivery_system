@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from drf_spectacular.utils import extend_schema, OpenApiTypes
 from apps.core.constants.messages import AuthMessages
 from apps.users.api.v1.serializers.forgot_password import (
     ResetPasswordRequestSerializer,
@@ -27,6 +28,11 @@ class ResetPasswordRequestView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "reset_password"
 
+    @extend_schema(
+        tags=["Auth"],
+        request=ResetPasswordRequestSerializer,
+        responses=OpenApiTypes.OBJECT,
+    )
     def post(self, request):
         """Handle password reset email request."""
 
@@ -57,6 +63,11 @@ class ResetPasswordConfirmView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["Auth"],
+        request=ResetPasswordConfirmSerializer,
+        responses=OpenApiTypes.OBJECT,
+    )
     def post(self, request):
         """Handle password reset confirmation."""
 
