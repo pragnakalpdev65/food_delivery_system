@@ -52,7 +52,7 @@ class ResetPasswordRequestSerializer(serializers.Serializer):
         AuthEmailService().send_token_email(
                                 user=self.user,
                                 salt="reset-password",
-                                url_name="reset_password_confirm",
+                                url_name="reset-password-confirm",
                                 subject="Reset your password - LetsCallAI",
                                 template_name="reset_password",
                                 context_key="reset_password_url",

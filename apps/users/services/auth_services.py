@@ -196,11 +196,29 @@ class LoginService:
 
     @staticmethod
     def generate_tokens_for_user(user):
-        """Handles JWT token operations."""
+        """Generate JWT tokens and include user details."""
+
         refresh = RefreshToken.for_user(user)
+
+        # Add custom claims to both refresh and access tokens
+        refresh["role"] = user.user_type
+        refresh["username"] = user.username
+        refresh["email"] = user.email
+
+        access = refresh.access_token
+        access["role"] = user.user_type
+        access["username"] = user.username
+        access["email"] = user.email
+
         return {
             "refresh": str(refresh),
-            "access": str(refresh.access_token),
+            "access": str(access),
+            "user": {
+                "id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "role": user.user_type,
+            },
         }
 
 

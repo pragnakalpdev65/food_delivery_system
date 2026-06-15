@@ -257,7 +257,7 @@ EMAIL_USE_TLS = env.EMAIL_USE_TLS
 EMAIL_HOST_USER = env.EMAIL_HOST_USER
 EMAIL_HOST_PASSWORD = env.EMAIL_HOST_PASSWORD
 SITE_BASE_URL = env.SITE_BASE_URL
-
+FRONTEND_URL = env.FRONTEND_URL
 
 # =============================================================================
 # MEDIA
