@@ -17,7 +17,7 @@ class CustomerProfile(TimestampedModel,UUIDModel):
     loyalty_points = models.PositiveIntegerField(default = 0)
     
     def __str__(self):
-        return self.user     
+        return f"Profile of {self.user.username}"    
 class Address(TimestampedModel,UUIDModel):
     customer = models.ForeignKey(CustomerProfile, on_delete=models.CASCADE, related_name="addresses") 
     pin_code = models.CharField(max_length=10)
