@@ -146,23 +146,24 @@ REST_FRAMEWORK = {
 }
 
 
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
-    }
-}
 # CACHES = {
 #     "default": {
-#         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": "redis://127.0.0.1:6379/1",
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#         }
 #     }
 # }
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
 
 AUTHENTICATION_BACKENDS = [
-    'apps.users.services.auth_services.LoginService',
+    # 'apps.users.services.auth_services.LoginService',
+    'apps.users.backends.multi_field_backend.MultiFieldBackend',
     'django.contrib.auth.backends.ModelBackend', # Keep default as fallback
 ]
 
