@@ -49,12 +49,12 @@ class LoginSerializer(serializers.ModelSerializer):
 
 class LoginResponseSerializer(serializers.Serializer):
     """
-    Serializer for login response tokens.
+    Serializer for login response.
     """
 
     access = serializers.CharField(read_only=True)
     refresh = serializers.CharField(read_only=True)
-
+    user = serializers.DictField(read_only=True)
 
 class LogoutSerializer(serializers.ModelSerializer):
     """

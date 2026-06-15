@@ -29,7 +29,8 @@ class AuthEmailService(BaseEmailService):
         token = self.generate_token(user,salt)
 
         # Build URL
-        path = reverse(url_name)
+        # path = reverse(url_name)
+        path = url_name
         url = f"{settings.SITE_BASE_URL}{path}?token={token}"
 
         # Default email = user's email

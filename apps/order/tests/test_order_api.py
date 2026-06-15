@@ -27,9 +27,10 @@ def customer(db):
 def owner(db):
     return CustomUser.objects.create_user(
         username="owner",
-        email="owner@example.com",     
+        email="owner@example.com",
         password="pass123",
-        user_type=UserType.RESTAURANT_OWNER
+        user_type=UserType.RESTAURANT_OWNER,
+        is_verified=True,
     )
 
 @pytest.fixture
