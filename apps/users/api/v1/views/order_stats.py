@@ -1,14 +1,18 @@
 from rest_framework.permissions import IsAuthenticated
-from apps.users.api.v1.serializers.order_stats import OrderStatsSerializer
 from rest_framework.response import Response
 from rest_framework import generics
 from drf_spectacular.utils import extend_schema
+
+from apps.users.api.v1.serializers.order_stats import (
+    OrderStatsSerializer,
+)
+
 
 @extend_schema(
     tags=["Orders"],
     description="Get statistics for the authenticated user's orders",
     responses=OrderStatsSerializer,
-)        
+)
 class UserOrderStatsView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = OrderStatsSerializer
@@ -16,6 +20,6 @@ class UserOrderStatsView(generics.GenericAPIView):
     def get(self, request):
         serializer = self.get_serializer(
             instance={},
-            context={"request": request}
+            context={"request": request},
         )
         return Response(serializer.data)

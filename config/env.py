@@ -30,7 +30,9 @@ class EnvSettings(BaseSettings):
     EMAIL_USE_TLS: bool = True
     EMAIL_HOST_USER: str
     EMAIL_HOST_PASSWORD: str
-    SITE_BASE_URL: str = "http://localhost:8000"   
+    SITE_BASE_URL: str = "http://localhost:8000"  
+    FRONTEND_URL: str = "http://localhost:3000"
+ 
     
 
     # Cors allowed origins
