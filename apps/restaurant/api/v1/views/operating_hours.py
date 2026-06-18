@@ -29,9 +29,15 @@ class OperatingHoursListCreateView(generics.ListCreateAPIView):
     serializer_class = OperatingHoursSerializer
     permission_classes = [IsAuthenticated,IsRestaurantOwner]
         
+    # def get_queryset(self):
+    #     return OperatingHours.objects.filter(
+    #         restaurant_id=self.kwargs['pk']
+    #     )
+    
     def get_queryset(self):
         return OperatingHours.objects.filter(
-            restaurant_id=self.kwargs['pk']
+            restaurant_id=self.kwargs["pk"],
+            restaurant__owner=self.request.user,
         )
 
     def perform_create(self, serializer):
@@ -74,10 +80,16 @@ class SpecialHoursListCreateView(generics.ListCreateAPIView):
     serializer_class = SpecialHoursSerializer
     permission_classes = [IsAuthenticated,IsRestaurantOwner]
 
-    def get_queryset(self):
+    # def get_queryset(self):
 
+    #     return SpecialHours.objects.filter(
+    #         restaurant_id=self.kwargs['pk']
+    #     )
+    
+    def get_queryset(self):
         return SpecialHours.objects.filter(
-            restaurant_id=self.kwargs['pk']
+            restaurant_id=self.kwargs["pk"],
+            restaurant__owner=self.request.user,
         )
 
     def perform_create(self, serializer):
@@ -101,10 +113,16 @@ class SpecialHoursDeleteView(generics.DestroyAPIView):
     lookup_field = 'id'  
     lookup_url_kwarg = 'special_hours_id'
 
-    def get_queryset(self):
+    # def get_queryset(self):
 
+    #     return SpecialHours.objects.filter(
+    #         restaurant_id=self.kwargs['pk']
+    #     )
+    
+    def get_queryset(self):
         return SpecialHours.objects.filter(
-            restaurant_id=self.kwargs['pk']
+            restaurant_id=self.kwargs["pk"],
+            restaurant__owner=self.request.user,
         )
 
 

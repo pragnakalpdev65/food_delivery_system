@@ -163,22 +163,21 @@ class RestaurantDetailSerializer(serializers.ModelSerializer):
                 order__restaurant=obj,
                 order__status=OrderStatus.DELIVERED,
             )
-            .values(
-                "menu_item__category__name"
-            )
+            .values("menu_item__category")
             .annotate(
                 total_orders=Sum("quantity")
             )
             .order_by("-total_orders")
         )
 
-        total = sum(
-            item["total_orders"] for item in items
-        ) or 1
+        total = (
+            sum(item["total_orders"] for item in items)
+            or 1
+        )
 
         return [
             {
-                "category": item["menu_item__category__name"],
+                "category": item["menu_item__category"],
                 "total_orders": item["total_orders"],
                 "percentage": round(
                     (item["total_orders"] / total) * 100,
