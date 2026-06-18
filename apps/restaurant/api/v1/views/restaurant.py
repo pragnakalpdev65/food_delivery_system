@@ -83,13 +83,29 @@ from django.db.models import Count
 )
 class RestaurantViewSet(ModelViewSet):
 
-    queryset = Restaurant.objects.annotate(favorite_count=Count('favorited_by')).order_by('id')
+    # queryset = Restaurant.objects.annotate(favorite_count=Count('favorited_by')).order_by('id')
     pagination_class = RestaurantPagination
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ["cuisine_type", "is_open"]
     search_fields = ["name", "cuisine_type"]
     ordering_fields = ["average_rating", "delivery_fee", "created_at"]
+    
+    def get_queryset(self):
+        queryset = Restaurant.objects.annotate(
+            favorite_count=Count("favorited_by")
+        )
+
+        if self.action in [
+            "update",
+            "partial_update",
+            "destroy",
+        ]:
+            return queryset.filter(
+                owner=self.request.user
+            )
+
+        return queryset.order_by("id")
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
