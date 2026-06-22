@@ -35,16 +35,30 @@ class RestaurantCacheService:
         return data
 
     @staticmethod
-    def get_restaurant_menu(restaurant_id):
+    def get_restaurant_menu(restaurant_id, data=None):
         cache_key = CacheKey.RESTAURANT_MENU % restaurant_id
 
-        data = cache.get(cache_key)
-        if data:
-            return data
-        menu_items = MenuItem.objects.filter(restaurant_id=restaurant_id)
-        data = MenuItemSerializer(menu_items, many=True).data
+        cached_data = cache.get(cache_key)
 
-        cache.set(cache_key, data, timeout=60 * 15)
+        if cached_data:
+            return cached_data
+
+        if data is None:
+            menu_items = MenuItem.objects.filter(
+                restaurant_id=restaurant_id
+            )
+
+            data = MenuItemSerializer(
+                menu_items,
+                many=True
+            ).data
+
+        cache.set(
+            cache_key,
+            data,
+            timeout=60 * 15,
+        )
+
         return data
 
     @staticmethod

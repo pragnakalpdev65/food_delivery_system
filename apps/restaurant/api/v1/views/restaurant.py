@@ -4,6 +4,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
+from apps.core.constants.choices import UserType
+from apps.order.models.order import Order
+from apps.order.api.v1.serializers.orders import OrderSerializer
 
 from drf_spectacular.utils import (
     extend_schema,
@@ -28,6 +31,7 @@ from common.api.pagination import RestaurantPagination, MenuItemPagination
 
 from apps.restaurant.services.cache_services import RestaurantCacheService
 from django.db.models import Count 
+
 
 @extend_schema_view(
     list=extend_schema(
@@ -134,8 +138,7 @@ class RestaurantViewSet(ModelViewSet):
         serializer = self.get_serializer(instance)
 
         data = RestaurantCacheService.get_restaurant_detail(
-            instance.id,
-            serializer.data
+            instance
         )
         return Response(data)
 
@@ -192,3 +195,53 @@ class RestaurantMenuView(ListAPIView):
         )
 
         return self.get_paginated_response(data)
+
+@extend_schema(
+    tags=["Restaurants"],
+    description="Get restaurants owned by authenticated restaurant owner",
+    responses=RestaurantListSerializer(many=True),
+)
+class MyRestaurantsView(ListAPIView):
+    """
+    Return restaurants owned by the authenticated restaurant owner.
+    """
+
+    serializer_class = RestaurantListSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.user_type != UserType.RESTAURANT_OWNER:
+            return Restaurant.objects.none()
+
+        return Restaurant.objects.filter(
+            owner=user
+        ).order_by("-created_at")
+
+@extend_schema(
+    tags=["Orders"],
+    description="Get orders for restaurants owned by authenticated restaurant owner",
+    responses=OrderSerializer(many=True),
+)
+class RestaurantOrderListView(ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.user_type != UserType.RESTAURANT_OWNER:
+            return Order.objects.none()
+
+        return (
+            Order.objects.filter(
+                restaurant__owner=user
+            )
+            .select_related(
+                "customer",
+                "restaurant",
+                "driver"
+            )
+            .order_by("-created_at")
+        )
