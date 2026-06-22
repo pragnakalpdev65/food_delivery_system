@@ -14,9 +14,10 @@ from apps.users.api.v1.serializers.profile import (
     CustomerProfileUpdateSerializer,
     AddressSerializer,
     DriverProfileSerializer,
+    RestaurantOwnerProfileSerializer
 )
 from apps.users.models import CustomUser
-from apps.users.models.profile import CustomerProfile, Address, DriverProfile
+from apps.users.models.profile import CustomerProfile, Address, DriverProfile,RestaurantOwnerProfile
 from drf_spectacular.utils import extend_schema, OpenApiTypes, OpenApiExample
 
 
@@ -328,7 +329,81 @@ class DriverProfileView(APIView):
             return Response(serializer.data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
+
+class RestaurantOwnerProfileView(APIView):
+    """
+    Retrieve and update authenticated restaurant owner profile.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["Users"],
+        summary="Get restaurant owner profile",
+        responses=RestaurantOwnerProfileSerializer,
+    )
+    def get(self, request):
+        try:
+            profile = request.user.restaurant_owner_profile
+
+            # Refresh statistics before returning
+            profile.update_statistics()
+
+        except RestaurantOwnerProfile.DoesNotExist:
+            return Response(
+                {
+                    "detail": getattr(
+                        AuthMessages,
+                        "RESTAURANT_OWNER_NOT_FOUND",
+                        "Restaurant owner profile not found"
+                    )
+                },
+                status=ErrorCodes.NOT_FOUND,
+            )
+
+        serializer = RestaurantOwnerProfileSerializer(profile)
+
+        return Response(serializer.data)
+
+    @extend_schema(
+        tags=["Users"],
+        summary="Update restaurant owner profile",
+        request=RestaurantOwnerProfileSerializer,
+        responses=RestaurantOwnerProfileSerializer,
+    )
+    def put(self, request):
+        try:
+            profile = request.user.restaurant_owner_profile
+
+        except RestaurantOwnerProfile.DoesNotExist:
+            return Response(
+                {
+                    "detail": getattr(
+                        AuthMessages,
+                        "RESTAURANT_OWNER_NOT_FOUND",
+                        "Restaurant owner profile not found"
+                    )
+                },
+                status=ErrorCodes.NOT_FOUND,
+            )
+
+        serializer = RestaurantOwnerProfileSerializer(
+            profile,
+            data=request.data,
+            partial=True,
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+
+            profile.update_statistics()
+
+            return Response(serializer.data)
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST,
+        )            
 class ChangePasswordView(APIView):
     """Allow authenticated user to change password and invalidate all sessions."""
 
