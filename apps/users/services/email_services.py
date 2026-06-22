@@ -31,7 +31,7 @@ class AuthEmailService(BaseEmailService):
         # Build URL
         # path = reverse(url_name)
         path = url_name
-        url = f"{settings.SITE_BASE_URL}{path}?token={token}"
+        url = f"{settings.FRONTEND_URL}/{path}/?token={token}"
 
         # Default email = user's email
         to_email = to_email or user.email

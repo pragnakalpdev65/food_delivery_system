@@ -18,7 +18,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views.restaurant import RestaurantViewSet, RestaurantMenuView
+from .views.restaurant import RestaurantViewSet, RestaurantMenuView, MyRestaurantsView,RestaurantOrderListView
 from .views.menu import MenuItemViewSet
 
 from apps.restaurant.api.v1.views.operating_hours import (
@@ -36,11 +36,21 @@ router.register(r"menuitem", MenuItemViewSet, basename="menuitem")
 
 urlpatterns = [
     path("", include(router.urls)),
-
+    
     path(
-        "restaurants/<int:restaurant_id>/menu/",
+        "my-restaurants/",
+        MyRestaurantsView.as_view(),
+        name="my-restaurants",
+    ),
+    path(
+        "restaurants/<uuid:restaurant_id>/menu/",
         RestaurantMenuView.as_view(),
         name="restaurant-menu",
+    ),
+    path(
+    "my-orders/",
+    RestaurantOrderListView.as_view(),
+    name="restaurant-orders",
     ),
     
     path(

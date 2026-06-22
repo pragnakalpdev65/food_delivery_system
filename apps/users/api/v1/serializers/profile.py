@@ -9,7 +9,7 @@ from rest_framework_simplejwt.token_blacklist.models import (
 )
 
 from apps.users.models.user import CustomUser
-from apps.users.models.profile import CustomerProfile, Address, DriverProfile
+from apps.users.models.profile import CustomerProfile, Address, DriverProfile, RestaurantOwnerProfile
 
 from apps.core.constants.error_codes import ErrorCodes
 from apps.core.constants.messages import AuthMessages
@@ -152,7 +152,27 @@ class DriverProfileUpdateSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
-        
+
+class RestaurantOwnerProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = RestaurantOwnerProfile
+        fields = [
+            "id",
+            "avatar",
+            "business_name",
+            "contact_number",
+            "total_restaurants",
+            "total_orders",
+            "total_revenue",
+            "average_rating",
+        ]
+        read_only_fields = [
+            "total_restaurants",
+            "total_orders",
+            "total_revenue",
+            "average_rating",
+        ]        
 class ChangePasswordSerializer(serializers.Serializer):
     """
     Serializer for handling password change requests.
