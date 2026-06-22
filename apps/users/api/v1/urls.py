@@ -3,7 +3,7 @@ from .views.register import UserRegistrationView,VerifyEmailView, ResendVerifica
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views.login import LoginView, LogoutView
 from .views.forgot_password import ResetPasswordRequestView, ResetPasswordConfirmView
-from .views.profile import CustomerProfileView,AddressView,AddressDetailView,DriverProfileView,ChangePasswordView,UpdateEmailView,CurrentEmailConfirmView,ConfirmEmailChangeView
+from .views.profile import CustomerProfileView,AddressView,AddressDetailView,DriverProfileView,ChangePasswordView,UpdateEmailView,CurrentEmailConfirmView,ConfirmEmailChangeView,RestaurantOwnerProfileView
 from rest_framework.routers import DefaultRouter
 from apps.users.api.v1.views.favorites import (
     FavoriteRestaurantViewSet,
@@ -36,7 +36,8 @@ urlpatterns = [
     path("profile/customer/", CustomerProfileView.as_view(), name="customer-profile"),
     path("profile/customer/addresses/", AddressView.as_view(), name="address-list-create"),
     path("profile/customer/addresses/<uuid:pk>/", AddressDetailView.as_view(), name="address-detail"),
-    path("profile/driver/", DriverProfileView.as_view(), name="driver-profile"),        
+    path("profile/driver/", DriverProfileView.as_view(), name="driver-profile"),  
+    path("profile/restaurant-owner/",RestaurantOwnerProfileView.as_view(),name="restaurant-owner-profile",),      
     path("profile/change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("profile/email/change-request/", UpdateEmailView.as_view(), name="email-change-request"),
     path("profile/email/current-confirm/", CurrentEmailConfirmView.as_view(), name="current-email-confirm"),
