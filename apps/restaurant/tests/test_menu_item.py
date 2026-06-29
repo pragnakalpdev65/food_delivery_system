@@ -129,3 +129,39 @@ class TestMenuItemAPI:
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 1
+
+    def test_get_restaurant_menu_success(self, api_client):
+        # Create multiple menu items
+        MenuItem.objects.create(
+            restaurant=self.restaurant,
+            name="Pizza",
+            price="200.00",
+            category="main_course",
+            preparation_time=20
+        )
+        MenuItem.objects.create(
+            restaurant=self.restaurant,
+            name="Burger",
+            price="100.00",
+            category="main_course",
+            preparation_time=15
+        )
+
+        api_client.force_authenticate(user=self.customer)
+        url = reverse("restaurant-menu", kwargs={"restaurant_id": self.restaurant.id})
+        response = api_client.get(url)
+
+        # The response should not be paginated (so no 'results' key)
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.data, list)
+        assert len(response.data) == 2
+        assert response.data[0]["name"] in ["Pizza", "Burger"]
+
+    def test_get_restaurant_menu_not_found(self, api_client):
+        import uuid
+        api_client.force_authenticate(user=self.customer)
+        url = reverse("restaurant-menu", kwargs={"restaurant_id": uuid.uuid4()})
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data["detail"] == "Restaurant not found."

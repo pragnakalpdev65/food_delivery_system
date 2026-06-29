@@ -108,3 +108,99 @@ class TestRestaurantAPI:
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 1
+
+    def test_get_restaurant_orders_all(self, api_client):
+        from apps.order.models.order import Order
+        
+        # Create another restaurant for the same owner
+        restaurant2 = Restaurant.objects.create(
+            owner=self.owner,
+            name="Second Restaurant",
+            cuisine_type="indian",
+            email="res2@test.com",
+            address="Surat",
+            opening_time="10:00:00",
+            closing_time="22:00:00"
+        )
+        
+        # Create restaurant owned by self.owner
+        restaurant1 = Restaurant.objects.create(
+            owner=self.owner,
+            name="First Restaurant",
+            cuisine_type="indian",
+            email="res1@test.com",
+            address="Surat",
+            opening_time="10:00:00",
+            closing_time="22:00:00"
+        )
+
+        Order.objects.create(customer=self.customer, restaurant=restaurant1, delivery_address="Surat")
+        Order.objects.create(customer=self.customer, restaurant=restaurant2, delivery_address="Surat")
+
+        api_client.force_authenticate(user=self.owner)
+        url = reverse("restaurant-orders")
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 2
+
+    def test_get_restaurant_orders_filtered(self, api_client):
+        from apps.order.models.order import Order
+        
+        restaurant1 = Restaurant.objects.create(
+            owner=self.owner,
+            name="First Restaurant",
+            cuisine_type="indian",
+            email="res1@test.com",
+            address="Surat",
+            opening_time="10:00:00",
+            closing_time="22:00:00"
+        )
+        restaurant2 = Restaurant.objects.create(
+            owner=self.owner,
+            name="Second Restaurant",
+            cuisine_type="indian",
+            email="res2@test.com",
+            address="Surat",
+            opening_time="10:00:00",
+            closing_time="22:00:00"
+        )
+
+        Order.objects.create(customer=self.customer, restaurant=restaurant1, delivery_address="Surat")
+        Order.objects.create(customer=self.customer, restaurant=restaurant2, delivery_address="Surat")
+
+        api_client.force_authenticate(user=self.owner)
+        url = reverse("restaurant-orders") + f"?restaurant_id={restaurant1.id}"
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["restaurant"] == restaurant1.id
+
+    def test_get_restaurant_orders_other_owner(self, api_client):
+        from apps.order.models.order import Order
+        
+        other_owner = User.objects.create_user(
+            email="other_owner@test.com",
+            password="Otherpass123!",
+            username="other_owner",
+            user_type="restaurant_owner"
+        )
+        other_restaurant = Restaurant.objects.create(
+            owner=other_owner,
+            name="Other Restaurant",
+            cuisine_type="indian",
+            email="otherres@test.com",
+            address="Surat",
+            opening_time="10:00:00",
+            closing_time="22:00:00"
+        )
+
+        Order.objects.create(customer=self.customer, restaurant=other_restaurant, delivery_address="Surat")
+
+        api_client.force_authenticate(user=self.owner)
+        url = reverse("restaurant-orders") + f"?restaurant_id={other_restaurant.id}"
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 0

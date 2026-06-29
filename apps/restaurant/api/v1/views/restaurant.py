@@ -4,6 +4,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
+from rest_framework import status
 from apps.core.constants.choices import UserType
 from apps.order.models.order import Order
 from apps.order.api.v1.serializers.orders import OrderSerializer
@@ -170,12 +171,12 @@ class RestaurantViewSet(ModelViewSet):
                 type=str,
             )
         ],
-        responses=MenuItemSerializer,
+        responses=MenuItemSerializer(many=True),
         tags=["Menu"],
     )
 class RestaurantMenuView(ListAPIView):
     serializer_class = MenuItemSerializer
-    pagination_class = MenuItemPagination 
+    pagination_class = None
 
     def get_queryset(self):
         restaurant_id = self.kwargs.get("restaurant_id")
@@ -184,17 +185,15 @@ class RestaurantMenuView(ListAPIView):
     def list(self, request, *args, **kwargs):
         restaurant_id = self.kwargs.get("restaurant_id")
 
-        queryset = self.get_queryset()
-        page = self.paginate_queryset(queryset)
+        if not Restaurant.objects.filter(id=restaurant_id).exists():
+            return Response(
+                {"detail": "Restaurant not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        serializer = self.get_serializer(page, many=True)
+        data = RestaurantCacheService.get_restaurant_menu(restaurant_id)
 
-        data = RestaurantCacheService.get_restaurant_menu(
-            restaurant_id,
-            serializer.data
-        )
-
-        return self.get_paginated_response(data)
+        return Response(data)
 
 @extend_schema(
     tags=["Restaurants"],
@@ -222,6 +221,14 @@ class MyRestaurantsView(ListAPIView):
 @extend_schema(
     tags=["Orders"],
     description="Get orders for restaurants owned by authenticated restaurant owner",
+    parameters=[
+        OpenApiParameter(
+            name="restaurant_id",
+            description="Filter orders by restaurant ID",
+            required=False,
+            type=str,
+        )
+    ],
     responses=OrderSerializer(many=True),
 )
 class RestaurantOrderListView(ListAPIView):
@@ -234,10 +241,16 @@ class RestaurantOrderListView(ListAPIView):
         if user.user_type != UserType.RESTAURANT_OWNER:
             return Order.objects.none()
 
+        queryset = Order.objects.filter(
+            restaurant__owner=user
+        )
+
+        restaurant_id = self.request.query_params.get("restaurant_id")
+        if restaurant_id:
+            queryset = queryset.filter(restaurant_id=restaurant_id)
+
         return (
-            Order.objects.filter(
-                restaurant__owner=user
-            )
+            queryset
             .select_related(
                 "customer",
                 "restaurant",
