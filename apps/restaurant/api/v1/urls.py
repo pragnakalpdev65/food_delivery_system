@@ -47,6 +47,7 @@ urlpatterns = [
         RestaurantMenuView.as_view(),
         name="restaurant-menu",
     ),
+    
     path(
     "my-orders/",
     RestaurantOrderListView.as_view(),
