@@ -129,3 +129,75 @@ class TestMenuItemAPI:
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 1
+
+    def test_get_restaurant_menu_success(self, api_client):
+        # Create multiple menu items
+        MenuItem.objects.create(
+            restaurant=self.restaurant,
+            name="Pizza",
+            price="200.00",
+            category="main_course",
+            preparation_time=20
+        )
+        MenuItem.objects.create(
+            restaurant=self.restaurant,
+            name="Burger",
+            price="100.00",
+            category="main_course",
+            preparation_time=15
+        )
+
+        api_client.force_authenticate(user=self.customer)
+        url = reverse("restaurant-menu", kwargs={"restaurant_id": self.restaurant.id})
+        response = api_client.get(url)
+
+        # The response should not be paginated (so no 'results' key)
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.data, list)
+        assert len(response.data) == 2
+        assert response.data[0]["name"] in ["Pizza", "Burger"]
+
+    def test_get_restaurant_menu_not_found(self, api_client):
+        import uuid
+        api_client.force_authenticate(user=self.customer)
+        url = reverse("restaurant-menu", kwargs={"restaurant_id": uuid.uuid4()})
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data["detail"] == "Restaurant not found."
+
+    def test_menu_item_cache_invalidation(self, api_client):
+        # 1. Create initial menu item so the cache won't be empty
+        MenuItem.objects.create(
+            restaurant=self.restaurant,
+            name="Pizza",
+            price="200.00",
+            category="main_course",
+            preparation_time=20
+        )
+
+        # 2. Fetch menu (will cache the list containing Pizza)
+        api_client.force_authenticate(user=self.customer)
+        url_menu = reverse("restaurant-menu", kwargs={"restaurant_id": self.restaurant.id})
+        response = api_client.get(url_menu)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+
+        # 3. Add a second menu item (Burger)
+        api_client.force_authenticate(user=self.owner)
+        url_create = reverse("menuitem-list")
+        payload = {
+            "name": "Burger",
+            "price": "100.00",
+            "category": "main_course",
+            "restaurant": str(self.restaurant.id),
+            "preparation_time": 15
+        }
+        response_create = api_client.post(url_create, payload)
+        assert response_create.status_code == status.HTTP_201_CREATED
+
+        # 4. Fetch menu again (should return both Pizza and Burger as signal invalidates the cache)
+        api_client.force_authenticate(user=self.customer)
+        response_after = api_client.get(url_menu)
+        assert response_after.status_code == status.HTTP_200_OK
+        assert len(response_after.data) == 2
