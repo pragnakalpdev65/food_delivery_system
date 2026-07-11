@@ -14,6 +14,7 @@ from apps.restaurant.models.restaurant import Restaurant
 from apps.permissions.order_permissions import IsCustomer
 from apps.core.constants.messages import AuthMessages
 from apps.core.constants.choices import OrderStatus
+from apps.order.services.websocket_services import WebSocketService
 
 class CancellationView(APIView):
     permission_classes = [IsAuthenticated, IsCustomer]
@@ -79,9 +80,15 @@ class CancellationView(APIView):
             refund_percentage=refund_percentage,            
         )
         
+        previous_status = order.status
         order.status = OrderStatus.CANCELLED
         order.save(update_fields=["status"])
-        
+
+        WebSocketService.notify_status_updated(
+            order,
+            previous_status=previous_status,
+        )
+
         return Response({
             "message": AuthMessages.CANCELLED_SUCCESS,
             "refund_amount": refund_amount,

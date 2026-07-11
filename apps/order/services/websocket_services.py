@@ -1,96 +1,156 @@
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+import logging
 
-channel_layer = get_channel_layer()
+logger = logging.getLogger(__name__)
+
 
 class WebSocketService:
     """
     Service layer for sending WebSocket messages to connected consumers.
-    
-    Groups are named to match consumer configurations:
-    - order_{order_id}: Generic order updates (OrderConsumer)
-    - restaurant_order_{order_id}: Restaurant owner updates (OrderManagementConsumer)
-    - restaurant_{restaurant_id}: Restaurant dashboard updates (RestaurantDashboardConsumer)
-    - customer_{user_id}: Customer-specific updates (CustomerConsumer)
-    - driver_{user_id}: Driver-specific updates (DriverConsumer)
+
+    Groups:
+    - order_{order_id}: OrderConsumer
+    - restaurant_order_{restaurant_id}: OrderManagementConsumer (restaurant order section)
+    - restaurant_{restaurant_id}: RestaurantDashboardConsumer
+    - customer_{user_id}: CustomerConsumer
+    - driver_{user_id}: DriverConsumer
     """
 
     @staticmethod
+    def _group_send(group, message_type, data):
+        channel_layer = get_channel_layer()
+        if channel_layer is None:
+            return
+
+        try:
+            async_to_sync(channel_layer.group_send)(
+                group,
+                {
+                    "type": message_type,
+                    "data": data,
+                },
+            )
+        except Exception:
+            # Never fail the HTTP request because realtime delivery is unavailable.
+            logger.exception("Failed to publish WebSocket event to group %s", group)
+
+    @staticmethod
     def send_order_update(order_id, data):
-        """
-        Send order update to customers tracking this specific order.
-        
-        Routes to: order_{order_id} group
-        Handled by: OrderConsumer.send_order_update()
-        """
-        async_to_sync(channel_layer.group_send)(
+        """Send update to clients tracking a specific order."""
+        WebSocketService._group_send(
             f"order_{order_id}",
-            {
-                "type": "send_order_update",
-                "data": data
-            }
+            "send_order_update",
+            data,
         )
 
     @staticmethod
-    def send_order_management_update(order_id, data):
+    def send_order_management_update(restaurant_id, data):
         """
-        Send order update to restaurant owner managing this order.
-        
-        Routes to: restaurant_order_{order_id} group
-        Handled by: OrderManagementConsumer.send_order_update()
+        Send update to the restaurant order section.
+
+        Routes to: restaurant_order_{restaurant_id}
+        Handled by: OrderManagementConsumer
         """
-        async_to_sync(channel_layer.group_send)(
-            f"restaurant_order_{order_id}",
-            {
-                "type": "send_order_update",
-                "data": data
-            }
+        WebSocketService._group_send(
+            f"restaurant_order_{restaurant_id}",
+            "send_order_update",
+            data,
         )
 
     @staticmethod
     def send_restaurant_update(restaurant_id, data):
-        """
-        Send new order notification to restaurant dashboard.
-        
-        Routes to: restaurant_{restaurant_id} group
-        Handled by: RestaurantDashboardConsumer.send_new_order()
-        """
-        async_to_sync(channel_layer.group_send)(
+        """Send new-order notification to restaurant dashboard."""
+        WebSocketService._group_send(
             f"restaurant_{restaurant_id}",
-            {
-                "type": "send_new_order",
-                "data": data
-            }
+            "send_new_order",
+            data,
         )
 
     @staticmethod
     def send_customer_update(user_id, data):
-        """
-        Send customer-specific update (promotions, recommendations, etc).
-        
-        Routes to: customer_{user_id} group
-        Handled by: CustomerConsumer.send_order_update()
-        """
-        async_to_sync(channel_layer.group_send)(
+        """Send customer-specific update."""
+        WebSocketService._group_send(
             f"customer_{user_id}",
-            {
-                "type": "send_order_update",
-                "data": data
-            }
+            "send_order_update",
+            data,
         )
 
     @staticmethod
     def send_driver_update(user_id, data):
-        """
-        Send driver-specific update (delivery assignments, instructions, etc).
-        
-        Routes to: driver_{user_id} group
-        Handled by: DriverConsumer.send_order_update()
-        """
-        async_to_sync(channel_layer.group_send)(
+        """Send driver-specific update."""
+        WebSocketService._group_send(
             f"driver_{user_id}",
-            {
-                "type": "send_order_update",
-                "data": data
-            }
+            "send_order_update",
+            data,
         )
+
+    @staticmethod
+    def notify_order_created(order):
+        """Broadcast order_created to restaurant order section, dashboard, and order room."""
+        payload = {
+            "event": "order_created",
+            "order_id": str(order.id),
+            "restaurant_id": str(order.restaurant_id),
+            "status": order.status,
+            "order_number": order.order_number,
+            "total_amount": str(order.total_amount),
+        }
+
+        WebSocketService.send_order_management_update(order.restaurant_id, payload)
+        WebSocketService.send_restaurant_update(
+            order.restaurant_id,
+            {
+                **payload,
+                "event": "new_order",
+                "message": "New order received",
+            },
+        )
+        WebSocketService.send_order_update(order.id, payload)
+        WebSocketService.send_customer_update(
+            order.customer_id,
+            {
+                "event": "order_created",
+                "order_id": str(order.id),
+                "status": order.status,
+                "message": "Your order has been placed successfully",
+            },
+        )
+
+    @staticmethod
+    def notify_status_updated(order, previous_status=None):
+        """Broadcast status_updated to order room and restaurant order section."""
+        payload = {
+            "event": "status_updated",
+            "order_id": str(order.id),
+            "restaurant_id": str(order.restaurant_id),
+            "status": order.status,
+            "previous_status": previous_status,
+            "order_number": order.order_number,
+        }
+
+        WebSocketService.send_order_update(order.id, payload)
+        WebSocketService.send_order_management_update(order.restaurant_id, payload)
+        WebSocketService.send_customer_update(order.customer_id, payload)
+
+        if order.driver_id:
+            WebSocketService.send_driver_update(order.driver_id, payload)
+
+    @staticmethod
+    def notify_driver_assigned(order):
+        """Broadcast driver_assigned after a driver is assigned."""
+        payload = {
+            "event": "driver_assigned",
+            "order_id": str(order.id),
+            "restaurant_id": str(order.restaurant_id),
+            "driver_id": str(order.driver_id) if order.driver_id else None,
+            "status": order.status,
+            "order_number": order.order_number,
+        }
+
+        WebSocketService.send_order_update(order.id, payload)
+        WebSocketService.send_order_management_update(order.restaurant_id, payload)
+        WebSocketService.send_customer_update(order.customer_id, payload)
+
+        if order.driver_id:
+            WebSocketService.send_driver_update(order.driver_id, payload)

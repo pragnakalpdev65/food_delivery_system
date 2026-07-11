@@ -119,30 +119,8 @@ class ReorderSerializer(serializers.Serializer):
 
         OrderItem.objects.bulk_create(order_items)
 
-        WebSocketService.send_customer_update(
-            user_id=new_order.customer.id,
-            data={
-                "event": "order_created",
-                "order_id": str(new_order.id),
-                "message": "Your reorder has been placed successfully",
-            }
-        )
-
-        WebSocketService.send_restaurant_update(
-            restaurant_id=new_order.restaurant.id,
-            data={
-                "event": "new_order",
-                "order_id": str(new_order.id),
-                "message": "New reorder received",
-            }
-        )
-
-        WebSocketService.send_order_update(
-            order_id=new_order.id,
-            data={
-                "event": "order_created",
-                "status": new_order.status,
-            }
+        transaction.on_commit(
+            lambda o=new_order: WebSocketService.notify_order_created(o)
         )
 
         return {

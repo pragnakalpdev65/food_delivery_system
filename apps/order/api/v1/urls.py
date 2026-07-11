@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views.orders import OrderViewSet
 from .views.review import ReviewView
+from .views.websocket_info import RestaurantOrderWebSocketInfoView
 
 from apps.order.api.v1.views.rating import (
     CreateOrderRatingView,
@@ -22,6 +23,12 @@ router.register(r"orders", OrderViewSet, basename="orders")
 
 urlpatterns = [
     path("", include(router.urls)),
+
+    path(
+        "restaurants/<uuid:restaurant_id>/orders/ws/",
+        RestaurantOrderWebSocketInfoView.as_view(),
+        name="restaurant-order-ws-info",
+    ),
 
     path("review", ReviewView.as_view(), name="review"),
     path("<uuid:order_id>/rate/", CreateOrderRatingView.as_view(), name="create-order-rating"),

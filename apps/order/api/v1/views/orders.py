@@ -23,6 +23,7 @@ from apps.core.constants.choices import UserType
 from apps.users.models import CustomUser
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiTypes
 from apps.core.constants.choices import OrderStatus
+from apps.order.services.websocket_services import WebSocketService
 from common.api.filters.order_filters import OrderFilter
 from django.utils import timezone
 
@@ -39,16 +40,17 @@ VALID_TRANSITIONS = {
 @extend_schema(
     tags=["Orders"],
     description="""
-WebSocket Endpoints:
+WebSocket Endpoints (JWT via ?token=<access_token>):
 
-ws/orders/{id}/ → real-time order updates  
-ws/orders/management/{id}/ → order management  
-ws/restaurants/{id}/ → restaurant dashboard  
+Restaurant Order Section:
+  ws/orders/management/{restaurant_id}/
+  Events: order_created, status_updated, driver_assigned, connected
 
-Events:
-- order_created
-- status_updated
-- driver_assigned
+Single order tracking:
+  ws/orders/{order_id}/
+
+Restaurant dashboard (new orders):
+  ws/restaurants/{restaurant_id}/
 """
 )
 @extend_schema_view(
@@ -217,9 +219,15 @@ class OrderViewSet(ModelViewSet):
                
             )
 
+        previous_status = order.status
         order.driver = driver
         order.status = OrderStatus.PICKED_UP
-        order.save()
+        order.save(update_fields=["driver", "status", "updated_at"])
+
+        WebSocketService.notify_driver_assigned(order)
+        WebSocketService.notify_status_updated(
+            order, previous_status=previous_status
+        )
 
         return Response({"message":AuthMessages.ASSIGN_SUCCESS })
 
@@ -270,11 +278,16 @@ class OrderViewSet(ModelViewSet):
                 
             )
 
+        previous_status = current_status
         order.status = new_status
-        
+
         if new_status == OrderStatus.DELIVERED:
             order.actual_delivery_time = timezone.now()
-        order.save()
+            order.save(update_fields=["status", "actual_delivery_time", "updated_at"])
+        else:
+            order.save(update_fields=["status", "updated_at"])
+
+        WebSocketService.notify_status_updated(order, previous_status=previous_status)
 
         return Response(
             {
