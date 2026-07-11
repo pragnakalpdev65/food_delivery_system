@@ -85,7 +85,7 @@ class RestaurantSerializer(serializers.ModelSerializer):
 class RestaurantListSerializer(serializers.ModelSerializer):
     class Meta:
         model=Restaurant
-        fields = ["id","name","address","opening_time"]
+        fields = ["id","name","logo","address","opening_time"]
  
 class RevenueTrendSerializer(serializers.Serializer):
     date = serializers.DateField()

@@ -7,7 +7,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
     favorite_count = serializers.IntegerField(read_only=True)
     class Meta:
         model = MenuItem
-        fields = ["restaurant", "name", "description", "price", "category", "dietary_info", "image", "is_available", "preparation_time","is_favorited",
+        fields = ["id", "restaurant", "name", "description", "price", "category", "dietary_info", "image", "is_available", "preparation_time","is_favorited",
             "favorite_count",]    
         
     def create(self, validated_data):
