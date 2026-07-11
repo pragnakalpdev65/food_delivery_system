@@ -82,6 +82,33 @@ class DriverProfileSerializer(serializers.ModelSerializer):
             "average_rating",
         ]
 
+
+class DriverListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for listing drivers available for order assignment.
+
+    `driver_id` is the CustomUser id expected by assign_driver.
+    """
+
+    driver_id = serializers.UUIDField(source="user.id", read_only=True)
+    username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+    phone_number = serializers.CharField(source="user.phone_number", read_only=True)
+
+    class Meta:
+        model = DriverProfile
+        fields = [
+            "driver_id",
+            "username",
+            "email",
+            "phone_number",
+            "vehicle_type",
+            "vehicle_number",
+            "is_available",
+            "total_deliveries",
+            "average_rating",
+        ]
+
 class CustomerProfileUpdateSerializer(serializers.ModelSerializer):
     """
     Serializer for updating CustomerProfile.
