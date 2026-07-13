@@ -20,6 +20,7 @@ Authorization: Bearer <access_token>
 """,
     request=LoginSerializer,
     responses=LoginResponseSerializer,
+    auth=[],
     examples=[
         OpenApiExample(
             "Login",

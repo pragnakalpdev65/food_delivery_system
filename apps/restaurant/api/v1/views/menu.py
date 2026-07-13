@@ -1,21 +1,41 @@
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from apps.permissions.restaurant_permissions import IsMenuItemOwner
-from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
-from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiExample, OpenApiTypes
+from drf_spectacular.utils import (
+    extend_schema_view,
+    extend_schema,
+    OpenApiExample,
+    OpenApiTypes,
+    OpenApiParameter,
+)
 
 from apps.restaurant.models.menu import MenuItem
-from apps.restaurant.models.restaurant import Restaurant
-from apps.restaurant.api.v1.serializers.menu import MenuItemSerializer, MenuItemDetailSerializer, MenuItemListSerializer
+from apps.restaurant.api.v1.serializers.menu import (
+    MenuItemSerializer,
+    MenuItemDetailSerializer,
+    MenuItemListSerializer,
+)
 from common.api.pagination import MenuItemPagination
 from django.db.models import Count
+
 
 @extend_schema_view(
     list=extend_schema(
         tags=["Menu"],
-        description="Get a paginated list of menu items",
+        description=(
+            "Get a paginated list of menu items. "
+            "Supports filtering by category, dietary_info, is_available, and search."
+        ),
+        parameters=[
+            OpenApiParameter(name="page", type=int, required=False, description="Page number"),
+            OpenApiParameter(name="page_size", type=int, required=False, description="Results per page (max 100)"),
+            OpenApiParameter(name="category", type=str, required=False, description="Filter by category"),
+            OpenApiParameter(name="dietary_info", type=str, required=False, description="Filter by dietary info"),
+            OpenApiParameter(name="is_available", type=bool, required=False, description="Filter by availability"),
+            OpenApiParameter(name="search", type=str, required=False, description="Search name or description"),
+            OpenApiParameter(name="ordering", type=str, required=False, description="Order by price, name, or created_at"),
+        ],
         responses=MenuItemListSerializer(many=True),
     ),
     retrieve=extend_schema(
@@ -61,8 +81,8 @@ from django.db.models import Count
 )
 class MenuItemViewSet(ModelViewSet):
     queryset = MenuItem.objects.annotate(
-        favorite_count=Count('favorited_by')
-    ).order_by('id')
+        favorite_count=Count("favorited_by")
+    ).order_by("id")
 
     pagination_class = MenuItemPagination
     permission_classes = [IsMenuItemOwner]
@@ -70,14 +90,14 @@ class MenuItemViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ["category", "dietary_info", "is_available"]
     search_fields = ["name", "description"]
-    ordering_fields = ["price","name","-created_at"]
-    
+    ordering_fields = ["price", "name", "created_at"]
+
     def get_queryset(self):
         return MenuItem.objects.all().order_by("-created_at")
-    
+
     def get_serializer_class(self):
         if self.action == "list":
-            return MenuItemListSerializer  
+            return MenuItemListSerializer
         elif self.action == "retrieve":
-            return MenuItemDetailSerializer  
+            return MenuItemDetailSerializer
         return MenuItemSerializer

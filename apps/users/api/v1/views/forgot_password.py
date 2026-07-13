@@ -30,6 +30,7 @@ class ResetPasswordRequestView(APIView):
 
     @extend_schema(
         tags=["Auth"],
+        auth=[],
         request=ResetPasswordRequestSerializer,
         responses=OpenApiTypes.OBJECT,
     )
@@ -65,6 +66,7 @@ class ResetPasswordConfirmView(APIView):
 
     @extend_schema(
         tags=["Auth"],
+        auth=[],
         request=ResetPasswordConfirmSerializer,
         responses=OpenApiTypes.OBJECT,
     )

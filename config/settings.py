@@ -270,19 +270,58 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Food Delivery API",
-    "DESCRIPTION": "API documentation for Food Delivery System",
+    "DESCRIPTION": (
+        "REST API documentation for the Food Delivery System.\n\n"
+        "## Authentication\n"
+        "Most endpoints require a JWT access token:\n"
+        "`Authorization: Bearer <access_token>`\n\n"
+        "Obtain tokens via **Auth → Login**. Use **Auth → Refresh** to renew access tokens.\n\n"
+        "## Roles\n"
+        "- **customer** – place orders, favorites, ratings\n"
+        "- **restaurant_owner** – manage restaurants, menus, orders, dashboard\n"
+        "- **delivery_driver** – delivery updates\n\n"
+        "## WebSockets\n"
+        "Restaurant order section: `ws/orders/management/{restaurant_id}/?token=<access_token>`\n"
+        "See Orders → Restaurant Order Section WebSocket info for details."
+    ),
     "VERSION": "1.0.0",
-
     "SERVE_INCLUDE_SCHEMA": False,
-
-    # 🔐 JWT Auth config
-    "SECURITY": [{"BearerAuth": []}],
-    "COMPONENTS": {
+    "SCHEMA_PATH_PREFIX": r"/api/v1/",
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SORT_OPERATIONS": False,
+    "ENUM_NAME_OVERRIDES": {
+        "UserTypeEnum": "apps.core.constants.choices.UserType",
+        "OrderStatusEnum": "apps.core.constants.choices.OrderStatus",
+        "WeekDaysEnum": "apps.core.constants.choices.WeekDays",
+        "CancellationReasonEnum": "apps.core.constants.choices.Reasons",
+        "InstructionCategoryEnum": "apps.core.constants.choices.InstructionCategory",
+        "ContactPreferenceEnum": "apps.core.constants.choices.ContactPreference",
+        "MenuCategoryEnum": "apps.restaurant.models.menu.MenuItem.CATEGORIES",
+        "DietaryInfoEnum": "apps.restaurant.models.menu.MenuItem.DIETARIES",
+    },
+    "TAGS": [
+        {"name": "Auth", "description": "Register, login, logout, verify email, password reset"},
+        {"name": "Users", "description": "Profiles, addresses, drivers list, favorites"},
+        {"name": "Restaurants", "description": "Restaurants, hours, availability, dashboard"},
+        {"name": "Menu", "description": "Menu items and restaurant menus"},
+        {"name": "Orders", "description": "Orders, status, drivers, ratings, reviews, cancellation"},
+    ],
+    "SWAGGER_UI_SETTINGS": {
+        "persistAuthorization": True,
+        "displayRequestDuration": True,
+        "filter": True,
+        "docExpansion": "none",
+        "tryItOutEnabled": True,
+    },
+    # Align with drf-spectacular + SimpleJWT default scheme name
+    "SECURITY": [{"jwtAuth": []}],
+    "APPEND_COMPONENTS": {
         "securitySchemes": {
-            "BearerAuth": {
+            "jwtAuth": {
                 "type": "http",
                 "scheme": "bearer",
                 "bearerFormat": "JWT",
+                "description": "JWT access token from /api/v1/users/auth/login/",
             }
         }
     },

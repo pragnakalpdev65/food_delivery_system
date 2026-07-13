@@ -1,6 +1,8 @@
 from django.urls import path
 from .views.register import UserRegistrationView,VerifyEmailView, ResendVerificationView
 from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from drf_spectacular.utils import extend_schema
 from .views.login import LoginView, LogoutView
 from .views.forgot_password import ResetPasswordRequestView, ResetPasswordConfirmView
 from .views.profile import CustomerProfileView,AddressView,AddressDetailView,DriverProfileView,ChangePasswordView,UpdateEmailView,CurrentEmailConfirmView,ConfirmEmailChangeView,RestaurantOwnerProfileView
@@ -11,6 +13,17 @@ from apps.users.api.v1.views.favorites import (
     FavoriteMenuItemViewSet,
 )
 from apps.users.api.v1.views.order_stats import UserOrderStatsView
+
+@extend_schema(
+    tags=["Auth"],
+    summary="Refresh JWT access token",
+    description="Exchange a valid refresh token for a new access token.",
+    request=TokenRefreshSerializer,
+    auth=[],
+)
+class TokenRefreshSchemaView(TokenRefreshView):
+    """Documented SimpleJWT refresh endpoint."""
+
 
 router = DefaultRouter()
 router.register(
@@ -28,7 +41,7 @@ urlpatterns = [
     path("auth/register/", UserRegistrationView.as_view(), name="register"),
     path("auth/verify-email/", VerifyEmailView.as_view(), name="verify-email"),
     path("auth/resend-verification/", ResendVerificationView.as_view(), name="resend-verification"),
-    path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("auth/refresh/", TokenRefreshSchemaView.as_view(), name="token_refresh"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("auth/reset-request/", ResetPasswordRequestView.as_view(), name="reset_password_request"),

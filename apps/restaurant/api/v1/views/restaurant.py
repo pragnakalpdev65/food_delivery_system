@@ -36,8 +36,10 @@ from django.db.models import Count
 
 @extend_schema_view(
     list=extend_schema(
-        description="Get list of restaurants",
+        description="Get a paginated list of restaurants. Supports filtering, search, and ordering.",
         parameters=[
+            OpenApiParameter(name="page", description="Page number", required=False, type=int),
+            OpenApiParameter(name="page_size", description="Results per page (max 100)", required=False, type=int),
             OpenApiParameter(name="cuisine_type", description="Filter by cuisine", required=False, type=str),
             OpenApiParameter(name="is_open", description="Filter open restaurants", required=False, type=bool),
             OpenApiParameter(name="search", description="Search by name or cuisine", required=False, type=str),
@@ -88,7 +90,7 @@ from django.db.models import Count
 )
 class RestaurantViewSet(ModelViewSet):
 
-    # queryset = Restaurant.objects.annotate(favorite_count=Count('favorited_by')).order_by('id')
+    queryset = Restaurant.objects.all()
     pagination_class = RestaurantPagination
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -126,13 +128,13 @@ class RestaurantViewSet(ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-
         page = self.paginate_queryset(queryset)
-        serializer = self.get_serializer(page, many=True)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
-        data = RestaurantCacheService.get_restaurant_list(serializer.data)
-
-        return self.get_paginated_response(data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -184,7 +186,10 @@ class RestaurantViewSet(ModelViewSet):
         return self.update(request, *args, **kwargs)
 
 @extend_schema(
-        description="Get menu items for a restaurant",
+        description=(
+            "Get paginated menu items for a restaurant. "
+            "Supports filtering by category, dietary_info, is_available, and search."
+        ),
         parameters=[
             OpenApiParameter(
                 name="restaurant_id",
@@ -192,14 +197,26 @@ class RestaurantViewSet(ModelViewSet):
                 description="Restaurant ID",
                 required=True,
                 type=str,
-            )
+            ),
+            OpenApiParameter(name="page", type=int, required=False, description="Page number"),
+            OpenApiParameter(name="page_size", type=int, required=False, description="Results per page (max 100)"),
+            OpenApiParameter(name="category", type=str, required=False, description="Filter by category"),
+            OpenApiParameter(name="dietary_info", type=str, required=False, description="Filter by dietary info"),
+            OpenApiParameter(name="is_available", type=bool, required=False, description="Filter by availability"),
+            OpenApiParameter(name="search", type=str, required=False, description="Search name or description"),
+            OpenApiParameter(name="ordering", type=str, required=False, description="Order by price, name, or created_at"),
         ],
         responses=MenuItemSerializer(many=True),
         tags=["Menu"],
     )
 class RestaurantMenuView(ListAPIView):
     serializer_class = MenuItemSerializer
-    pagination_class = None
+    pagination_class = MenuItemPagination
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ["category", "dietary_info", "is_available"]
+    search_fields = ["name", "description"]
+    ordering_fields = ["price", "name", "created_at"]
+    ordering = ["name"]
 
     def get_queryset(self):
         restaurant_id = self.kwargs.get("restaurant_id")
@@ -214,9 +231,7 @@ class RestaurantMenuView(ListAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        data = RestaurantCacheService.get_restaurant_menu(restaurant_id)
-
-        return Response(data)
+        return super().list(request, *args, **kwargs)
 
 @extend_schema(
     tags=["Restaurants"],
@@ -230,11 +245,15 @@ class MyRestaurantsView(ListAPIView):
 
     serializer_class = RestaurantListSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = RestaurantPagination
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Restaurant.objects.none()
+
         user = self.request.user
 
-        if user.user_type != UserType.RESTAURANT_OWNER:
+        if not user.is_authenticated or user.user_type != UserType.RESTAURANT_OWNER:
             return Restaurant.objects.none()
 
         return Restaurant.objects.filter(
@@ -243,25 +262,32 @@ class MyRestaurantsView(ListAPIView):
 
 @extend_schema(
     tags=["Orders"],
-    description="Get orders for restaurants owned by authenticated restaurant owner",
+    description="Get paginated orders for restaurants owned by authenticated restaurant owner",
     parameters=[
         OpenApiParameter(
             name="restaurant_id",
             description="Filter orders by restaurant ID",
             required=False,
             type=str,
-        )
+        ),
+        OpenApiParameter(name="page", type=int, required=False, description="Page number"),
+        OpenApiParameter(name="page_size", type=int, required=False, description="Results per page"),
     ],
     responses=OrderSerializer(many=True),
 )
 class RestaurantOrderListView(ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = RestaurantPagination
+    queryset = Order.objects.none()
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Order.objects.none()
+
         user = self.request.user
 
-        if user.user_type != UserType.RESTAURANT_OWNER:
+        if not user.is_authenticated or user.user_type != UserType.RESTAURANT_OWNER:
             return Order.objects.none()
 
         queryset = Order.objects.filter(

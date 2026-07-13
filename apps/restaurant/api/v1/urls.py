@@ -20,6 +20,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views.restaurant import RestaurantViewSet, RestaurantMenuView, MyRestaurantsView,RestaurantOrderListView
 from .views.menu import MenuItemViewSet
+from .views.dashboard import RestaurantDashboardView
 
 from apps.restaurant.api.v1.views.operating_hours import (
     OperatingHoursListCreateView,
@@ -46,6 +47,11 @@ urlpatterns = [
         "restaurants/<uuid:restaurant_id>/menu/",
         RestaurantMenuView.as_view(),
         name="restaurant-menu",
+    ),
+    path(
+        "restaurants/<uuid:restaurant_id>/dashboard/",
+        RestaurantDashboardView.as_view(),
+        name="restaurant-dashboard",
     ),
     
     path(
