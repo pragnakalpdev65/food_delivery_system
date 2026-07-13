@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 from apps.restaurant.models.restaurant import Restaurant
 from apps.restaurant.services.availability_service import RestaurantAvailabilityService
 from django.db.models import Avg, Sum, Count
@@ -45,6 +47,7 @@ class RestaurantSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "owner"]
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_favorited(self, obj):
         request = self.context.get("request")
 
@@ -55,12 +58,15 @@ class RestaurantSerializer(serializers.ModelSerializer):
             customer=request.user
         ).exists()
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_open_now(self, obj):
         return RestaurantAvailabilityService.is_currently_open(obj)
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_next_opening_time(self, obj):
         return RestaurantAvailabilityService.get_next_opening_time(obj)
 
+    @extend_schema_field(OpenApiTypes.NUMBER)
     def get_net_revenue(self, obj):
         return (
             Order.objects.filter(
@@ -72,6 +78,7 @@ class RestaurantSerializer(serializers.ModelSerializer):
             or 0
         )
 
+    @extend_schema_field(OpenApiTypes.NUMBER)
     def get_average_order_value(self, obj):
         return (
             Order.objects.filter(
@@ -130,6 +137,7 @@ class RestaurantDetailSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "owner"]
 
+    @extend_schema_field(RevenueTrendSerializer(many=True))
     def get_revenue_trends(self, obj):
         last_week = timezone.now() - timedelta(days=7)
 
@@ -157,6 +165,7 @@ class RestaurantDetailSerializer(serializers.ModelSerializer):
             for item in data
         ]
 
+    @extend_schema_field(CategorySalesSerializer(many=True))
     def get_sales_by_category(self, obj):
         items = (
             OrderItem.objects.filter(
@@ -187,6 +196,7 @@ class RestaurantDetailSerializer(serializers.ModelSerializer):
             for item in items
         ]
 
+    @extend_schema_field(PopularTimeSerializer(many=True))
     def get_popular_times(self, obj):
         data = (
             Order.objects.filter(

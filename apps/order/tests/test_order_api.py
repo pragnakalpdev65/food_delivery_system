@@ -74,6 +74,18 @@ def order(db, customer, restaurant):
 
 @pytest.mark.django_db
 class TestOrderAPI:
+    def test_orders_list_is_paginated(self, customer, order, client):
+        client.force_authenticate(user=customer)
+
+        url = reverse("orders-list")
+        response = client.get(url)
+
+        assert response.status_code == 200
+        assert "results" in response.data
+        assert "count" in response.data
+        assert response.data["count"] == 1
+        assert len(response.data["results"]) == 1
+
     def test_valid_status_transition(self, owner, order, client):
         client.force_authenticate(user=owner)
 

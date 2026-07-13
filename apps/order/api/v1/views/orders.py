@@ -21,10 +21,18 @@ from apps.restaurant.services.availability_service import RestaurantAvailability
 from apps.core.constants.error_codes import ErrorCodes
 from apps.core.constants.choices import UserType
 from apps.users.models import CustomUser
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiTypes, OpenApiParameter
 from apps.core.constants.choices import OrderStatus
 from apps.order.services.websocket_services import WebSocketService
 from common.api.filters.order_filters import OrderFilter
+from common.api.pagination import OrderPagination
+from common.api.swagger import (
+    AssignDriverRequestSerializer,
+    AssignDriverResponseSerializer,
+    UpdateOrderStatusRequestSerializer,
+    UpdateOrderStatusResponseSerializer,
+    OrderETAResponseSerializer,
+)
 from django.utils import timezone
 
 VALID_TRANSITIONS = {
@@ -56,7 +64,17 @@ Restaurant dashboard (new orders):
 @extend_schema_view(
     list=extend_schema(
         tags=["Orders"],
-        description="List orders visible to the authenticated user",
+        description=(
+            "List orders visible to the authenticated user. "
+            "Supports pagination (?page, ?page_size), filtering, and search."
+        ),
+        parameters=[
+            OpenApiParameter(name="page", type=int, required=False, description="Page number"),
+            OpenApiParameter(name="page_size", type=int, required=False, description="Results per page (max 100)"),
+            OpenApiParameter(name="status", type=str, required=False, description="Filter by order status"),
+            OpenApiParameter(name="restaurant", type=str, required=False, description="Filter by restaurant UUID"),
+            OpenApiParameter(name="search", type=str, required=False, description="Search order number or restaurant name"),
+        ],
         responses=OrderSerializer(many=True),
     ),
     retrieve=extend_schema(
@@ -83,7 +101,9 @@ Restaurant dashboard (new orders):
     ),
 )
 class OrderViewSet(ModelViewSet):
+    queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    pagination_class = OrderPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = OrderFilter
 
@@ -94,6 +114,9 @@ class OrderViewSet(ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Order.objects.none()
+
         user = self.request.user
         user_type = user.user_type
         queryset = Order.objects.select_related(
@@ -168,22 +191,18 @@ class OrderViewSet(ModelViewSet):
 
     @extend_schema(
         tags=["Orders"],
-        description="Assign a driver to the order (Restaurant owner only)",
-        request={
-            "application/json": {
-                "type": "object",
-                "properties": {
-                    "driver_id": {"type": "string"}
-                },
-                "required": ["driver_id"],
-            }
-        },
-        responses={
-            "type": "object",
-            "properties": {
-                "message": {"type": "string"}
-            },
-        },
+        summary="Assign driver",
+        description="Assign a driver to the order (Restaurant owner only). Order must be ready.",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description="Order UUID",
+            )
+        ],
+        request=AssignDriverRequestSerializer,
+        responses={200: AssignDriverResponseSerializer},
     )
     @action(detail=True, methods=['post'])
     def assign_driver(self, request, pk=None):
@@ -233,23 +252,18 @@ class OrderViewSet(ModelViewSet):
 
     @extend_schema(
         tags=["Orders"],
-        description="Update order status based on allowed transitions",
-        request={
-            "application/json": {
-                "type": "object",
-                "properties": {
-                    "status": {"type": "string"}
-                },
-                "required": ["status"],
-            }
-        },
-        responses={
-            "type": "object",
-            "properties": {
-                "message": {"type": "string"},
-                "status": {"type": "string"}
-            },
-        },
+        summary="Update order status",
+        description="Update order status based on allowed transitions (owner or assigned driver).",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description="Order UUID",
+            )
+        ],
+        request=UpdateOrderStatusRequestSerializer,
+        responses={200: UpdateOrderStatusResponseSerializer},
     )    
     @action(detail=True, methods=['post'])
     def update_status(self, request, pk=None):
@@ -298,13 +312,17 @@ class OrderViewSet(ModelViewSet):
      
     @extend_schema(
         tags=["Orders"],
+        summary="Get order ETA",
         description="Get estimated delivery time for the order",
-        responses={
-            "type": "object",
-            "properties": {
-                "estimated_delivery_time": {"type": "string", "format": "date-time"}
-            }
-        },
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description="Order UUID",
+            )
+        ],
+        responses={200: OrderETAResponseSerializer},
     ) 
     @action(detail=True, methods=['get'])
     def eta(self, request, pk=None):

@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 
 from apps.order.models.order import Order, OrderRating
 from apps.order.api.v1.serializers.rating import OrderRatingSerializer
@@ -48,19 +48,50 @@ class CreateOrderRatingView(generics.CreateAPIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@extend_schema(
-    tags=["Orders"],
-    description="Retrieve or update your rating for a specific order",
-    request=OrderRatingSerializer,
-    responses=OrderRatingSerializer,
-    parameters=[
-        OpenApiParameter(
-            name="order_id",
-            type=str,
-            location=OpenApiParameter.PATH,
-            description="ID of the order",
-        )
-    ],
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Orders"],
+        summary="Get order rating",
+        description="Retrieve your rating for a specific order",
+        parameters=[
+            OpenApiParameter(
+                name="order_id",
+                type=str,
+                location=OpenApiParameter.PATH,
+                description="Order UUID",
+            )
+        ],
+        responses=OrderRatingSerializer,
+    ),
+    put=extend_schema(
+        tags=["Orders"],
+        summary="Update order rating",
+        description="Update your rating for a specific order",
+        parameters=[
+            OpenApiParameter(
+                name="order_id",
+                type=str,
+                location=OpenApiParameter.PATH,
+                description="Order UUID",
+            )
+        ],
+        request=OrderRatingSerializer,
+        responses=OrderRatingSerializer,
+    ),
+    patch=extend_schema(
+        tags=["Orders"],
+        summary="Partially update order rating",
+        parameters=[
+            OpenApiParameter(
+                name="order_id",
+                type=str,
+                location=OpenApiParameter.PATH,
+                description="Order UUID",
+            )
+        ],
+        request=OrderRatingSerializer,
+        responses=OrderRatingSerializer,
+    ),
 )
 class OrderRatingDetailView(generics.RetrieveUpdateAPIView):
     """Handles GET and PUT/PATCH for an order rating."""
@@ -87,8 +118,11 @@ class MyRatingsView(generics.ListAPIView):
     serializer_class = OrderRatingSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = MyRatingsPagination
+    queryset = OrderRating.objects.none()
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return OrderRating.objects.none()
         return (
             OrderRating.objects.filter(customer=self.request.user)
             .select_related("order", "order__restaurant")

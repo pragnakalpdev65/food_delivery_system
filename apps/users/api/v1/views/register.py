@@ -9,13 +9,15 @@ from rest_framework.views import APIView
 from apps.users.models import CustomUser
 from apps.users.services.email_services import AuthEmailService
 from apps.core.constants.messages import AuthMessages
-from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiTypes, OpenApiParameter
 
 @extend_schema(
     tags=["Auth"],
+    summary="Register",
     description="Register a new user",
     request=UserRegistrationSerializer,
     responses=UserRegistrationResponseSerializer,
+    auth=[],
     examples=[
         OpenApiExample(
             "Register",
@@ -71,7 +73,18 @@ class UserRegistrationView(APIView):
 
 @extend_schema(
     tags=["Auth"],
-    description="Verify a user's email address",
+    auth=[],
+    summary="Verify email",
+    description="Verify a user's email address using a signed token query parameter.",
+    parameters=[
+        OpenApiParameter(
+            name="token",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="Signed email verification token",
+        )
+    ],
     responses=OpenApiTypes.OBJECT,
 )
 class VerifyEmailView(APIView):
@@ -99,6 +112,7 @@ class VerifyEmailView(APIView):
     
 @extend_schema(
     tags=["Auth"],
+    auth=[],
     description="Resend the email verification link for an unverified user.",
     request=ResendVerificationSerializer,
     responses=OpenApiTypes.OBJECT,

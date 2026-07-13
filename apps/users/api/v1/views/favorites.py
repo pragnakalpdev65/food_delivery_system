@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiTypes, OpenApiParameter
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 
 from apps.restaurant.models.restaurant import Restaurant
 from apps.users.models import FavoriteRestaurant
@@ -14,56 +14,64 @@ from apps.users.models import FavoriteMenuItem
 from apps.users.api.v1.serializers.favorites import FavoriteMenuItemSerializer
 from apps.core.constants.messages import AuthMessages
 from common.api.pagination import FavoritePagination
+from common.api.swagger import (
+    FavoriteCheckResponseSerializer,
+    MessageResponseSerializer,
+)
+
+
 @extend_schema_view(
     list=extend_schema(
         tags=["Users"],
-        description="List favorite restaurants for the authenticated user",
-        responses=FavoriteRestaurantSerializer(many=True),
+        summary="List favorite restaurants",
+        description="List favorite restaurants for the authenticated customer",
+        responses={200: FavoriteRestaurantSerializer(many=True)},
     ),
     create=extend_schema(
         tags=["Users"],
+        summary="Add favorite restaurant",
         description="Add a restaurant to favorites",
         request={
             "application/json": {
                 "type": "object",
-                "properties": {"restaurant_id": {"type": "string"}},
+                "properties": {"restaurant_id": {"type": "string", "format": "uuid"}},
                 "required": ["restaurant_id"],
             }
         },
-        responses=OpenApiTypes.OBJECT,
+        responses={
+            201: MessageResponseSerializer,
+            400: MessageResponseSerializer,
+        },
     ),
     destroy=extend_schema(
         tags=["Users"],
+        summary="Remove favorite restaurant",
         description="Remove a restaurant from favorites",
         parameters=[
             OpenApiParameter(
-                name="pk",
-                description="Restaurant ID",
+                name="id",
+                description="Restaurant UUID",
                 required=True,
-                type=str,
+                type=OpenApiTypes.UUID,
                 location=OpenApiParameter.PATH,
             )
         ],
-        responses=OpenApiTypes.OBJECT,
+        responses={204: MessageResponseSerializer},
     ),
     check=extend_schema(
         tags=["Users"],
-        description="Check if a restaurant is favorited by the authenticated user",
+        summary="Check favorite restaurant",
+        description="Check if a restaurant is favorited by the authenticated customer",
         parameters=[
             OpenApiParameter(
-                name="pk",
-                description="Restaurant ID",
+                name="id",
+                description="Restaurant UUID",
                 required=True,
-                type=str,
+                type=OpenApiTypes.UUID,
                 location=OpenApiParameter.PATH,
             )
         ],
-        responses={
-            "type": "object",
-            "properties": {
-                "is_favorited": {"type": "boolean"}
-            },
-        },
+        responses={200: FavoriteCheckResponseSerializer},
     ),
 )
 class FavoriteRestaurantViewSet(ViewSet):
@@ -73,7 +81,7 @@ class FavoriteRestaurantViewSet(ViewSet):
     def list(self, request):
         queryset = FavoriteRestaurant.objects.select_related("restaurant").filter(
             customer=request.user
-        ).order_by('-created_at')
+        ).order_by("-created_at")
 
         serializer = FavoriteRestaurantSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -126,56 +134,60 @@ class FavoriteRestaurantViewSet(ViewSet):
         ).exists()
 
         return Response({"is_favorited": is_favorited})
+
+
 @extend_schema_view(
     list=extend_schema(
         tags=["Users"],
-        description="List favorite menu items for the authenticated user",
-        responses=FavoriteMenuItemSerializer(many=True),
+        summary="List favorite menu items",
+        description="List favorite menu items for the authenticated customer",
+        responses={200: FavoriteMenuItemSerializer(many=True)},
     ),
     create=extend_schema(
         tags=["Users"],
+        summary="Add favorite menu item",
         description="Add a menu item to favorites",
         request={
             "application/json": {
                 "type": "object",
-                "properties": {"item_id": {"type": "string"}},
+                "properties": {"item_id": {"type": "string", "format": "uuid"}},
                 "required": ["item_id"],
             }
         },
-        responses=OpenApiTypes.OBJECT,
+        responses={
+            201: MessageResponseSerializer,
+            400: MessageResponseSerializer,
+        },
     ),
     destroy=extend_schema(
         tags=["Users"],
+        summary="Remove favorite menu item",
         description="Remove a menu item from favorites",
         parameters=[
             OpenApiParameter(
-                name="pk",
-                description="Menu item ID",
+                name="id",
+                description="Menu item UUID",
                 required=True,
-                type=str,
+                type=OpenApiTypes.UUID,
                 location=OpenApiParameter.PATH,
             )
         ],
-        responses=OpenApiTypes.OBJECT,
+        responses={204: MessageResponseSerializer},
     ),
     check=extend_schema(
         tags=["Users"],
-        description="Check if a menu item is favorited by the authenticated user",
+        summary="Check favorite menu item",
+        description="Check if a menu item is favorited by the authenticated customer",
         parameters=[
             OpenApiParameter(
-                name="pk",
-                description="Menu item ID",
+                name="id",
+                description="Menu item UUID",
                 required=True,
-                type=str,
+                type=OpenApiTypes.UUID,
                 location=OpenApiParameter.PATH,
             )
         ],
-        responses={
-            "type": "object",
-            "properties": {
-                "is_favorited": {"type": "boolean"}
-            },
-        },
+        responses={200: FavoriteCheckResponseSerializer},
     ),
 )
 class FavoriteMenuItemViewSet(ViewSet):
@@ -187,7 +199,6 @@ class FavoriteMenuItemViewSet(ViewSet):
             return None
         return get_object_or_404(MenuItem, id=item_id)
 
-    @extend_schema(tags=["Users"], description="List favorite menu items")
     def list(self, request):
         queryset = (
             FavoriteMenuItem.objects
@@ -198,7 +209,6 @@ class FavoriteMenuItemViewSet(ViewSet):
         serializer = FavoriteMenuItemSerializer(queryset, many=True)
         return Response(serializer.data)
 
-    @extend_schema(tags=["Users"], description="Add menu item to favorites")
     def create(self, request):
         item_id = request.data.get("item_id")
 
@@ -226,7 +236,6 @@ class FavoriteMenuItemViewSet(ViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @extend_schema(tags=["Users"], description="Remove menu item from favorites")
     def destroy(self, request, pk=None):
         favorite = get_object_or_404(
             FavoriteMenuItem,
@@ -240,7 +249,6 @@ class FavoriteMenuItemViewSet(ViewSet):
             status=status.HTTP_204_NO_CONTENT,
         )
 
-    @extend_schema(tags=["Users"], description="Check if menu item is favorite")
     @action(detail=True, methods=["get"])
     def check(self, request, pk=None):
         is_favorited = FavoriteMenuItem.objects.filter(
