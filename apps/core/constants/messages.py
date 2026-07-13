@@ -54,6 +54,7 @@ class AuthMessages:
     REQUEST_EXPIRED = _("Request expired")
     CUSTOMER_NOT_FOUND = _("Customer profile not found")
     ADDRESS_NOT_FOUND = _("Address profile not found")
+    RESTAURANT_OWNER_NOT_FOUND = _("Restaurant owner profile not found")
 
     #restaurants
     

@@ -2,381 +2,316 @@ openapi: 3.0.3
 info:
   title: Food Delivery API
   version: 1.0.0
-  description: API documentation for Food Delivery System
+  description: |-
+    REST API documentation for the Food Delivery System.
+
+    ## Authentication
+    Most endpoints require a JWT access token:
+    `Authorization: Bearer <access_token>`
+
+    Obtain tokens via **Auth → Login**. Use **Auth → Refresh** to renew access tokens.
+
+    ## Roles
+    - **customer** – place orders, favorites, ratings
+    - **restaurant_owner** – manage restaurants, menus, orders, dashboard
+    - **delivery_driver** – delivery updates
+
+    ## WebSockets
+    Restaurant order section: `ws/orders/management/{restaurant_id}/?token=<access_token>`
+    See Orders → Restaurant Order Section WebSocket info for details.
 paths:
-  /api/v1/order/{order_id}/cancel/:
-    get:
-      operationId: v1_order_cancel_retrieve
-      description: Check if an order can be cancelled and preview refund details
-      parameters:
-      - in: path
-        name: order_id
-        schema:
-          type: string
-        description: ID of the order
-        required: true
-      tags:
-      - Orders
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  can_cancel:
-                    type: boolean
-                  message:
-                    type: string
-                  refund_amount:
-                    type: number
-                  refund_percentage:
-                    type: number
-          description: ''
+  /api/v1/users/auth/register/:
     post:
-      operationId: v1_order_cancel_create
-      description: Cancel an order and get refund details
-      parameters:
-      - in: path
-        name: order_id
-        schema:
-          type: string
-        description: ID of the order to cancel
-        required: true
+      operationId: users_auth_register_create
+      description: Register a new user
+      summary: Register
       tags:
-      - Orders
+      - Auth
       requestBody:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                reason:
-                  type: string
-                reason_detail:
-                  type: string
-              required:
-              - reason
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  refund_amount:
-                    type: number
-                  refund_percentage:
-                    type: number
-                  refund_method:
-                    type: string
-          description: ''
-  /api/v1/order/{order_id}/cancel/info/:
-    get:
-      operationId: v1_order_cancel_info_retrieve
-      description: Check if an order can be cancelled and preview refund details
-      parameters:
-      - in: path
-        name: order_id
-        schema:
-          type: string
-        description: ID of the order
-        required: true
-      tags:
-      - Orders
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  can_cancel:
-                    type: boolean
-                  message:
-                    type: string
-                  refund_amount:
-                    type: number
-                  refund_percentage:
-                    type: number
-          description: ''
-    post:
-      operationId: v1_order_cancel_info_create
-      description: Cancel an order and get refund details
-      parameters:
-      - in: path
-        name: order_id
-        schema:
-          type: string
-        description: ID of the order to cancel
-        required: true
-      tags:
-      - Orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason:
-                  type: string
-                reason_detail:
-                  type: string
-              required:
-              - reason
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  refund_amount:
-                    type: number
-                  refund_percentage:
-                    type: number
-                  refund_method:
-                    type: string
-          description: ''
-  /api/v1/order/{order_id}/rate/:
-    post:
-      operationId: v1_order_rate_create
-      description: Create a rating for a specific order
-      parameters:
-      - in: path
-        name: order_id
-        schema:
-          type: string
-        description: ID of the order to rate
-        required: true
-      tags:
-      - Orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/OrderRating'
+              $ref: '#/components/schemas/UserRegistrationRequest'
+            examples:
+              Register:
+                value:
+                  email: user@test.com
+                  username: user
+                  password: StrongPass123!
+                  user_type: customer
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/OrderRating'
+              $ref: '#/components/schemas/UserRegistrationRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/OrderRating'
+              $ref: '#/components/schemas/UserRegistrationRequest'
         required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrderRating'
-          description: ''
-  /api/v1/order/{order_id}/rating/:
-    get:
-      operationId: v1_order_rating_retrieve
-      description: Retrieve or update your rating for a specific order
-      parameters:
-      - in: path
-        name: order_id
-        schema:
-          type: string
-        description: ID of the order
-        required: true
-      tags:
-      - Orders
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderRating'
+                $ref: '#/components/schemas/UserRegistrationResponse'
+              examples:
+                Register:
+                  value:
+                    email: user@test.com
+                    username: user
+                    password: StrongPass123!
+                    user_type: customer
+          description: ''
+  /api/v1/users/auth/verify-email/:
+    get:
+      operationId: users_auth_verify_email_retrieve
+      description: Verify a user's email address using a signed token query parameter.
+      summary: Verify email
+      parameters:
+      - in: query
+        name: token
+        schema:
+          type: string
+        description: Signed email verification token
+        required: true
+      tags:
+      - Auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/users/auth/resend-verification/:
+    post:
+      operationId: users_auth_resend_verification_create
+      description: Resend the email verification link for an unverified user.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/users/auth/refresh/:
+    post:
+      operationId: users_auth_refresh_create
+      description: Exchange a valid refresh token for a new access token.
+      summary: Refresh JWT access token
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/users/auth/login/:
+    post:
+      operationId: users_auth_login_create
+      description: |2
+
+        Login and receive JWT tokens
+
+        Use token:
+        Authorization: Bearer <access_token>
+      summary: Login
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              Login:
+                value:
+                  username: user@test.com
+                  password: StrongPass123!
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                Login:
+                  value:
+                    username: user@test.com
+                    password: StrongPass123!
+          description: ''
+  /api/v1/users/auth/logout/:
+    post:
+      operationId: users_auth_logout_create
+      description: Logout API endpoint.Invalidates a user's refresh token by blacklisting
+        it.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/users/auth/reset-request/:
+    post:
+      operationId: users_auth_reset_request_create
+      description: Handle password reset email request.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/users/auth/reset-confirm/:
+    post:
+      operationId: users_auth_reset_confirm_create
+      description: Handle password reset confirmation.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordConfirmRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/users/profile/customer/:
+    get:
+      operationId: users_profile_customer_retrieve
+      description: Get logged-in customer profile details
+      summary: Get user profile
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerProfile'
           description: ''
     put:
-      operationId: v1_order_rating_update
-      description: Retrieve or update your rating for a specific order
-      parameters:
-      - in: path
-        name: order_id
-        schema:
-          type: string
-        description: ID of the order
-        required: true
+      operationId: users_profile_customer_update
+      description: Update the logged-in customer's profile details
+      summary: Update user profile
       tags:
-      - Orders
+      - Users
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OrderRating'
+              $ref: '#/components/schemas/CustomerProfileUpdateRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/OrderRating'
+              $ref: '#/components/schemas/CustomerProfileUpdateRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/OrderRating'
-        required: true
+              $ref: '#/components/schemas/CustomerProfileUpdateRequest'
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderRating'
+                $ref: '#/components/schemas/CustomerProfile'
           description: ''
-    patch:
-      operationId: v1_order_rating_partial_update
-      description: Retrieve or update your rating for a specific order
-      parameters:
-      - in: path
-        name: order_id
-        schema:
-          type: string
-        description: ID of the order
-        required: true
-      tags:
-      - Orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedOrderRating'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedOrderRating'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedOrderRating'
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrderRating'
-          description: ''
-  /api/v1/order/{restaurant_id}/cancellation-policy/:
+  /api/v1/users/profile/customer/addresses/:
     get:
-      operationId: v1_order_cancellation_policy_retrieve
-      description: Retrieve or update cancellation policy for a restaurant
-      parameters:
-      - in: path
-        name: restaurant_id
-        schema:
-          type: string
-        description: ID of the restaurant
-        required: true
+      operationId: users_profile_customer_addresses_list
+      description: Return all addresses associated with the authenticated customer's
+        profile.
+      summary: List user addresses
       tags:
-      - Orders
+      - Users
       security:
       - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CancellationPolicy'
-          description: ''
-    put:
-      operationId: v1_order_cancellation_policy_update
-      description: Retrieve or update cancellation policy for a restaurant
-      parameters:
-      - in: path
-        name: restaurant_id
-        schema:
-          type: string
-        description: ID of the restaurant
-        required: true
-      tags:
-      - Orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CancellationPolicy'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/CancellationPolicy'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/CancellationPolicy'
-      security:
       - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CancellationPolicy'
-          description: ''
-    patch:
-      operationId: v1_order_cancellation_policy_partial_update
-      description: Retrieve or update cancellation policy for a restaurant
-      parameters:
-      - in: path
-        name: restaurant_id
-        schema:
-          type: string
-        description: ID of the restaurant
-        required: true
-      tags:
-      - Orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedCancellationPolicy'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedCancellationPolicy'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedCancellationPolicy'
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CancellationPolicy'
-          description: ''
-  /api/v1/order/instruction-templates/:
-    get:
-      operationId: v1_order_instruction_templates_list
-      description: List active instruction templates, optionally filtered by category
-      tags:
-      - Orders
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
       responses:
         '200':
           content:
@@ -384,823 +319,867 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/InstructionTemplate'
+                  $ref: '#/components/schemas/Address'
           description: ''
-  /api/v1/order/orders:
+    post:
+      operationId: users_profile_customer_addresses_create
+      description: Create a new address for the authenticated customer.
+      summary: Create an address
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+  /api/v1/users/profile/customer/addresses/{id}/:
     get:
-      operationId: v1_order_orders_list
-      description: List orders visible to the authenticated user
+      operationId: users_profile_customer_addresses_retrieve
+      description: Retrieve a specific address belonging to the authenticated customer.
+      summary: Get address details
       parameters:
-      - name: ordering
-        required: false
-        in: query
-        description: Which field to use when ordering the results.
+      - in: path
+        name: id
         schema:
           type: string
+          format: uuid
+        required: true
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    put:
+      operationId: users_profile_customer_addresses_update
+      description: Update an existing address for the authenticated customer.
+      summary: Update address
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    delete:
+      operationId: users_profile_customer_addresses_destroy
+      description: Delete a specific address from the authenticated customer's profile.
+      summary: Delete address
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/users/profile/driver/:
+    get:
+      operationId: users_profile_driver_retrieve
+      description: Fetch the authenticated driver's profile details.
+      summary: Get driver profile
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverProfile'
+          description: ''
+    put:
+      operationId: users_profile_driver_update
+      description: Update the authenticated driver's profile details.
+      summary: Update driver profile
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DriverProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DriverProfileRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverProfile'
+          description: ''
+  /api/v1/users/drivers/:
+    get:
+      operationId: users_drivers_list
+      description: 'List active delivery drivers for order assignment. Restaurant
+        owners only. Optional filter: is_available.'
+      summary: List drivers
+      parameters:
+      - in: query
+        name: is_available
+        schema:
+          type: boolean
+        description: Filter by driver availability
       - name: page
         required: false
         in: query
         description: A page number within the paginated result set.
         schema:
           type: integer
-      - name: search
-        required: false
-        in: query
-        description: A search term.
-        schema:
-          type: string
-      tags:
-      - Orders
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedOrderList'
-          description: ''
-    post:
-      operationId: v1_order_orders_create
-      description: Create a new order (Customer only)
-      tags:
-      - Orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Order'
-            examples:
-              CreateOrderExample:
-                value:
-                  restaurant: uuid
-                  delivery_address: 123 Main Street
-                  items:
-                  - menu_item: uuid
-                    quantity: 2
-                summary: Create Order Example
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Order'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Order'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-              examples:
-                CreateOrderExample:
-                  value:
-                    restaurant: uuid
-                    delivery_address: 123 Main Street
-                    items:
-                    - menu_item: uuid
-                      quantity: 2
-                  summary: Create Order Example
-          description: ''
-  /api/v1/order/orders/{id}:
-    get:
-      operationId: v1_order_orders_retrieve
-      description: Retrieve a specific order
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - Orders
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-          description: ''
-    put:
-      operationId: v1_order_orders_update
-      description: Update an order
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - Orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Order'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Order'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Order'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-          description: ''
-    patch:
-      operationId: v1_order_orders_partial_update
-      description: Partially update an order
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - Orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedOrder'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedOrder'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedOrder'
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-          description: ''
-    delete:
-      operationId: v1_order_orders_destroy
-      description: Delete an order
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - Orders
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/order/orders/{id}/assign_driver:
-    post:
-      operationId: v1_order_orders_assign_driver_create
-      description: Assign a driver to the order (Restaurant owner only)
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - Orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                driver_id:
-                  type: string
-              required:
-              - driver_id
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        type:
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-                description: Unspecified response body
-          description: ''
-        properties:
-          content:
-            application/json:
-              schema:
-                message:
-                  type: string
-          description: ''
-  /api/v1/order/orders/{id}/eta:
-    get:
-      operationId: v1_order_orders_eta_retrieve
-      description: Get estimated delivery time for the order
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - Orders
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        type:
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-                description: Unspecified response body
-          description: ''
-        properties:
-          content:
-            application/json:
-              schema:
-                estimated_delivery_time:
-                  type: string
-                  format: date-time
-          description: ''
-  /api/v1/order/orders/{id}/reorder:
-    post:
-      operationId: v1_order_orders_reorder_create
-      description: Reorder from a previous order
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - Orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Order'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Order'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Order'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          description: No response body
-  /api/v1/order/orders/{id}/update_status:
-    post:
-      operationId: v1_order_orders_update_status_create
-      description: Update order status based on allowed transitions
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - Orders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  type: string
-              required:
-              - status
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        type:
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-                description: Unspecified response body
-          description: ''
-        properties:
-          content:
-            application/json:
-              schema:
-                message:
-                  type: string
-                status:
-                  type: string
-          description: ''
-  /api/v1/order/review:
-    get:
-      operationId: v1_order_review_list
-      description: Create review for delivered order (Customer only)
-      parameters:
-      - name: limit
+      - name: page_size
         required: false
         in: query
         description: Number of results to return per page.
         schema:
           type: integer
-      - in: query
-        name: menu_item
-        schema:
-          type: string
-          format: uuid
-        description: Unique identifier (UUID)
-      - name: offset
-        required: false
-        in: query
-        description: The initial index from which to return the results.
-        schema:
-          type: integer
-      - name: ordering
-        required: false
-        in: query
-        description: Which field to use when ordering the results.
-        schema:
-          type: string
-      - in: query
-        name: rating
-        schema:
-          type: integer
-      - in: query
-        name: restaurant
-        schema:
-          type: string
-          format: uuid
-        description: Unique identifier (UUID)
       tags:
-      - Orders
+      - Users
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedReviewList'
-              examples:
-                ReviewExample:
-                  value:
-                    count: 123
-                    next: http://api.example.org/accounts/?offset=400&limit=100
-                    previous: http://api.example.org/accounts/?offset=200&limit=100
-                    results:
-                    - order: uuid
-                      restaurant: uuid
-                      menu_item: uuid
-                      rating: 5
-                      comment: Great food!
-                  summary: Review Example
+                $ref: '#/components/schemas/PaginatedDriverListList'
+          description: ''
+  /api/v1/users/profile/restaurant-owner/:
+    get:
+      operationId: users_profile_restaurant_owner_retrieve
+      description: Retrieve and update authenticated restaurant owner profile.
+      summary: Get restaurant owner profile
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantOwnerProfile'
           description: ''
     post:
-      operationId: v1_order_review_create
-      description: Create review for delivered order (Customer only)
+      operationId: users_profile_restaurant_owner_create
+      description: Same as PUT. Accepts partial profile updates for restaurant owners.
+      summary: Update restaurant owner profile (POST)
       tags:
-      - Orders
+      - Users
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Review'
-            examples:
-              ReviewExample:
-                value:
-                  order: uuid
-                  restaurant: uuid
-                  menu_item: uuid
-                  rating: 5
-                  comment: Great food!
-                summary: Review Example
+              $ref: '#/components/schemas/RestaurantOwnerProfileRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Review'
+              $ref: '#/components/schemas/RestaurantOwnerProfileRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Review'
-        required: true
+              $ref: '#/components/schemas/RestaurantOwnerProfileRequest'
       security:
       - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Review'
-              examples:
-                ReviewExample:
-                  value:
-                    order: uuid
-                    restaurant: uuid
-                    menu_item: uuid
-                    rating: 5
-                    comment: Great food!
-                  summary: Review Example
-          description: ''
-  /api/v1/order/users/my-ratings/:
-    get:
-      operationId: v1_order_users_my_ratings_list
-      description: List all ratings created by the authenticated user
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      tags:
-      - Orders
-      security:
       - jwtAuth: []
-      - BearerAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedOrderRatingList'
+                $ref: '#/components/schemas/RestaurantOwnerProfile'
           description: ''
-  /api/v1/restaurant/{id}/is-open/:
-    get:
-      operationId: v1_restaurant_is_open_retrieve
-      description: Check whether a restaurant is currently open
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - Restaurants
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RestaurantAvailability'
-          description: ''
-  /api/v1/restaurant/{id}/next-opening/:
-    get:
-      operationId: v1_restaurant_next_opening_retrieve
-      description: Get the next opening time for a restaurant
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - Restaurants
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RestaurantAvailability'
-          description: ''
-  /api/v1/restaurant/{id}/operating-hours/:
-    get:
-      operationId: v1_restaurant_operating_hours_list
-      description: List and create operating hours for a restaurant
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      tags:
-      - Restaurants
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedOperatingHoursList'
-          description: ''
-    post:
-      operationId: v1_restaurant_operating_hours_create
-      description: List and create operating hours for a restaurant
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      tags:
-      - Restaurants
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/OperatingHours'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/OperatingHours'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/OperatingHours'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedOperatingHoursList'
-          description: ''
-  /api/v1/restaurant/{id}/operating-hours/{day}/:
     put:
-      operationId: v1_restaurant_operating_hours_update
-      description: Update operating hours for a restaurant
-      parameters:
-      - in: path
-        name: day
-        schema:
-          type: integer
-        required: true
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        required: true
+      operationId: users_profile_restaurant_owner_update
+      description: Retrieve and update authenticated restaurant owner profile.
+      summary: Update restaurant owner profile
       tags:
-      - Restaurants
+      - Users
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OperatingHours'
+              $ref: '#/components/schemas/RestaurantOwnerProfileRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/OperatingHours'
+              $ref: '#/components/schemas/RestaurantOwnerProfileRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/OperatingHours'
-        required: true
+              $ref: '#/components/schemas/RestaurantOwnerProfileRequest'
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OperatingHours'
+                $ref: '#/components/schemas/RestaurantOwnerProfile'
           description: ''
-    patch:
-      operationId: v1_restaurant_operating_hours_partial_update
-      description: Update operating hours for a restaurant
-      parameters:
-      - in: path
-        name: day
-        schema:
-          type: integer
-        required: true
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        required: true
+  /api/v1/users/profile/change-password/:
+    post:
+      operationId: users_profile_change_password_create
+      description: |-
+        Handle password change request for authenticated user.
+
+        Validates current password, sets new password,
+        and blacklists all existing JWT tokens to force re-login.
       tags:
-      - Restaurants
+      - Users
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedOperatingHours'
+              $ref: '#/components/schemas/ChangePasswordRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedOperatingHours'
+              $ref: '#/components/schemas/ChangePasswordRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedOperatingHours'
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OperatingHours'
+                type: object
+                additionalProperties: {}
           description: ''
-  /api/v1/restaurant/{id}/special-hours/:
+  /api/v1/users/profile/email/change-request/:
+    post:
+      operationId: users_profile_email_change_request_create
+      description: Initiate email change request.
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEmailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateEmailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateEmailRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/users/profile/email/current-confirm/:
     get:
-      operationId: v1_restaurant_special_hours_list
-      description: List and create special hours for a restaurant
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
+      operationId: users_profile_email_current_confirm_retrieve
+      description: Confirm old email using token from query params.
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/users/profile/email/change-confirm/:
+    post:
+      operationId: users_profile_email_change_confirm_create
+      description: Confirm new email and complete email update process.
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmEmailChangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConfirmEmailChangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConfirmEmailChangeRequest'
         required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/users/order-stats/:
+    get:
+      operationId: users_order_stats_retrieve
+      description: Get statistics for the authenticated user's orders
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderStats'
+          description: ''
+  /api/v1/users/favorites/restaurants/:
+    get:
+      operationId: users_favorites_restaurants_list
+      description: List favorite restaurants for the authenticated customer
+      summary: List favorite restaurants
+      parameters:
       - name: page
         required: false
         in: query
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
-      - Restaurants
+      - Users
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedSpecialHoursList'
+                $ref: '#/components/schemas/PaginatedFavoriteRestaurantList'
           description: ''
     post:
-      operationId: v1_restaurant_special_hours_create
-      description: List and create special hours for a restaurant
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
+      operationId: users_favorites_restaurants_create
+      description: Add a restaurant to favorites
+      summary: Add favorite restaurant
       tags:
-      - Restaurants
+      - Users
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SpecialHours'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SpecialHours'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SpecialHours'
-        required: true
+              type: object
+              properties:
+                restaurant_id:
+                  type: string
+                  format: uuid
+              required:
+              - restaurant_id
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedSpecialHoursList'
+                $ref: '#/components/schemas/MessageResponse'
           description: ''
-  /api/v1/restaurant/{id}/special-hours/{special_hours_id}/:
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+          description: ''
+  /api/v1/users/favorites/restaurants/{id}/:
     delete:
-      operationId: v1_restaurant_special_hours_destroy
-      description: Delete a special hours entry for a restaurant
+      operationId: users_favorites_restaurants_destroy
+      description: Remove a restaurant from favorites
+      summary: Remove favorite restaurant
       parameters:
       - in: path
         name: id
         schema:
           type: string
           format: uuid
+        description: Restaurant UUID
         required: true
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+          description: ''
+  /api/v1/users/favorites/restaurants/{id}/check/:
+    get:
+      operationId: users_favorites_restaurants_check_retrieve
+      description: Check if a restaurant is favorited by the authenticated customer
+      summary: Check favorite restaurant
+      parameters:
       - in: path
-        name: special_hours_id
+        name: id
         schema:
           type: string
           format: uuid
+        description: Restaurant UUID
+        required: true
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteCheckResponse'
+          description: ''
+  /api/v1/users/favorites/menu-items/:
+    get:
+      operationId: users_favorites_menu_items_list
+      description: List favorite menu items for the authenticated customer
+      summary: List favorite menu items
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFavoriteMenuItemList'
+          description: ''
+    post:
+      operationId: users_favorites_menu_items_create
+      description: Add a menu item to favorites
+      summary: Add favorite menu item
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                item_id:
+                  type: string
+                  format: uuid
+              required:
+              - item_id
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+          description: ''
+  /api/v1/users/favorites/menu-items/{id}/:
+    delete:
+      operationId: users_favorites_menu_items_destroy
+      description: Remove a menu item from favorites
+      summary: Remove favorite menu item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Menu item UUID
+        required: true
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+          description: ''
+  /api/v1/users/favorites/menu-items/{id}/check/:
+    get:
+      operationId: users_favorites_menu_items_check_retrieve
+      description: Check if a menu item is favorited by the authenticated customer
+      summary: Check favorite menu item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Menu item UUID
+        required: true
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteCheckResponse'
+          description: ''
+  /api/v1/restaurant/restaurants:
+    get:
+      operationId: restaurant_restaurants_list
+      description: Get a paginated list of restaurants. Supports filtering, search,
+        and ordering.
+      parameters:
+      - in: query
+        name: cuisine_type
+        schema:
+          type: string
+        description: Filter by cuisine
+      - in: query
+        name: is_open
+        schema:
+          type: boolean
+        description: Filter open restaurants
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: Order by rating, delivery_fee, created_at
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Page number
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+        description: Results per page (max 100)
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search by name or cuisine
+      tags:
+      - Restaurants
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRestaurantListList'
+          description: ''
+    post:
+      operationId: restaurant_restaurants_create
+      description: Create a new restaurant (Only Owner)
+      tags:
+      - Restaurants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestaurantRequest'
+            examples:
+              ExampleRequest:
+                value:
+                  name: Pizza Hub
+                  cuisine_type: Italian
+                  delivery_fee: '50.00'
+                  is_open: true
+                summary: Example Request
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RestaurantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RestaurantRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+              examples:
+                ExampleRequest:
+                  value:
+                    name: Pizza Hub
+                    cuisine_type: Italian
+                    delivery_fee: '50.00'
+                    is_open: true
+                  summary: Example Request
+          description: ''
+  /api/v1/restaurant/restaurants/{id}:
+    get:
+      operationId: restaurant_restaurants_retrieve
+      description: Get restaurant details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
         required: true
       tags:
       - Restaurants
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantDetail'
+          description: ''
+    delete:
+      operationId: restaurant_restaurants_destroy
+      description: Delete a restaurant
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        required: true
+      tags:
+      - Restaurants
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
       responses:
         '204':
           description: No response body
+    patch:
+      operationId: restaurant_restaurants_partial_update
+      description: Partially update an existing restaurant
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        required: true
+      tags:
+      - Restaurants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRestaurantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRestaurantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRestaurantRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+          description: ''
+    put:
+      operationId: restaurant_restaurants_update
+      description: Update an existing restaurant
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        required: true
+      tags:
+      - Restaurants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestaurantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RestaurantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RestaurantRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+          description: ''
   /api/v1/restaurant/menuitem:
     get:
-      operationId: v1_restaurant_menuitem_list
-      description: Get a paginated list of menu items
+      operationId: restaurant_menuitem_list
+      description: Get a paginated list of menu items. Supports filtering by category,
+        dietary_info, is_available, and search.
       parameters:
       - in: query
         name: category
         schema:
           type: string
-          enum:
-          - Beverage
-          - appetizer
-          - dessert
-          - main_course
-          - side_dish
-        description: |-
-          * `appetizer` - Appetizer
-          * `main_course` - Main Course
-          * `dessert` - Dessert
-          * `Beverage` - beverage
-          * `side_dish` - Side Dish
+        description: Filter by category
       - in: query
         name: dietary_info
         schema:
           type: string
-          enum:
-          - dairy_free
-          - gluten_free
-          - none
-          - vegan
-          - vegetarian
-        description: |-
-          * `vegetarian` - Vegetarian
-          * `vegan` - Vegan
-          * `gluten_free` - Gluten Free
-          * `dairy_free` - Dairy Free
-          * `none` - None
+        description: Filter by dietary info
       - in: query
         name: is_available
         schema:
           type: boolean
-      - name: ordering
-        required: false
-        in: query
-        description: Which field to use when ordering the results.
+        description: Filter by availability
+      - in: query
+        name: ordering
         schema:
           type: string
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
+        description: Order by price, name, or created_at
+      - in: query
+        name: page
         schema:
           type: integer
-      - name: search
-        required: false
-        in: query
-        description: A search term.
+        description: Page number
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+        description: Results per page (max 100)
+      - in: query
+        name: search
         schema:
           type: string
+        description: Search name or description
       tags:
       - Menu
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
@@ -1209,7 +1188,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedMenuItemListList'
           description: ''
     post:
-      operationId: v1_restaurant_menuitem_create
+      operationId: restaurant_menuitem_create
       description: Create a new menu item
       tags:
       - Menu
@@ -1217,7 +1196,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MenuItem'
+              $ref: '#/components/schemas/MenuItemRequest'
             examples:
               MenuItemExample:
                 value:
@@ -1229,14 +1208,14 @@ paths:
                 summary: Menu Item Example
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/MenuItem'
+              $ref: '#/components/schemas/MenuItemRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/MenuItem'
+              $ref: '#/components/schemas/MenuItemRequest'
         required: true
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '201':
           content:
@@ -1255,7 +1234,7 @@ paths:
           description: ''
   /api/v1/restaurant/menuitem/{id}:
     get:
-      operationId: v1_restaurant_menuitem_retrieve
+      operationId: restaurant_menuitem_retrieve
       description: Get detailed information for a single menu item
       parameters:
       - in: path
@@ -1269,7 +1248,7 @@ paths:
       - Menu
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
@@ -1277,9 +1256,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/MenuItemDetail'
           description: ''
-    put:
-      operationId: v1_restaurant_menuitem_update
-      description: Update a menu item
+    delete:
+      operationId: restaurant_menuitem_destroy
+      description: Delete a menu item
       parameters:
       - in: path
         name: id
@@ -1290,30 +1269,14 @@ paths:
         required: true
       tags:
       - Menu
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MenuItem'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/MenuItem'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/MenuItem'
-        required: true
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MenuItem'
-          description: ''
+        '204':
+          description: No response body
     patch:
-      operationId: v1_restaurant_menuitem_partial_update
+      operationId: restaurant_menuitem_partial_update
       description: Partially update a menu item
       parameters:
       - in: path
@@ -1329,16 +1292,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedMenuItem'
+              $ref: '#/components/schemas/PatchedMenuItemRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedMenuItem'
+              $ref: '#/components/schemas/PatchedMenuItemRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedMenuItem'
+              $ref: '#/components/schemas/PatchedMenuItemRequest'
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
@@ -1346,9 +1309,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/MenuItem'
           description: ''
-    delete:
-      operationId: v1_restaurant_menuitem_destroy
-      description: Delete a menu item
+    put:
+      operationId: restaurant_menuitem_update
+      description: Update a menu item
       parameters:
       - in: path
         name: id
@@ -1359,38 +1322,31 @@ paths:
         required: true
       tags:
       - Menu
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuItemRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MenuItemRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MenuItemRequest'
+        required: true
       security:
       - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/restaurant/my-orders/:
-    get:
-      operationId: v1_restaurant_my_orders_list
-      description: Get orders for restaurants owned by authenticated restaurant owner
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      tags:
-      - Orders
-      security:
       - jwtAuth: []
-      - BearerAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedOrderList'
+                $ref: '#/components/schemas/MenuItem'
           description: ''
   /api/v1/restaurant/my-restaurants/:
     get:
-      operationId: v1_restaurant_my_restaurants_list
+      operationId: restaurant_my_restaurants_list
       description: Get restaurants owned by authenticated restaurant owner
       parameters:
       - name: page
@@ -1399,11 +1355,17 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - Restaurants
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
@@ -1411,97 +1373,600 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedRestaurantListList'
           description: ''
-  /api/v1/restaurant/restaurants:
+  /api/v1/restaurant/restaurants/{restaurant_id}/menu/:
     get:
-      operationId: v1_restaurant_restaurants_list
-      description: Get list of restaurants
+      operationId: restaurant_restaurants_menu_list
+      description: Get paginated menu items for a restaurant. Supports filtering by
+        category, dietary_info, is_available, and search.
       parameters:
       - in: query
-        name: cuisine_type
+        name: category
         schema:
           type: string
-        description: Filter by cuisine
+        description: Filter by category
       - in: query
-        name: is_open
+        name: dietary_info
+        schema:
+          type: string
+        description: Filter by dietary info
+      - in: query
+        name: is_available
         schema:
           type: boolean
-        description: Filter open restaurants
+        description: Filter by availability
       - in: query
         name: ordering
         schema:
           type: string
-        description: Order by rating, delivery_fee, created_at
+        description: Order by price, name, or created_at
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Page number
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+        description: Results per page (max 100)
+      - in: path
+        name: restaurant_id
+        schema:
+          type: string
+        description: Restaurant ID
+        required: true
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search name or description
+      tags:
+      - Menu
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMenuItemList'
+          description: ''
+  /api/v1/restaurant/restaurants/{restaurant_id}/dashboard/:
+    get:
+      operationId: restaurant_restaurants_dashboard_retrieve
+      description: 'Dashboard metrics for a restaurant owned by the authenticated
+        owner: active orders, daily revenue, new customers, menu items, net revenue,
+        total orders, average order value, average rating, and analytics pack.'
+      summary: Restaurant owner dashboard
+      parameters:
+      - in: path
+        name: restaurant_id
+        schema:
+          type: string
+        description: Restaurant UUID
+        required: true
+      tags:
+      - Restaurants
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantDashboard'
+          description: ''
+  /api/v1/restaurant/my-orders/:
+    get:
+      operationId: restaurant_my_orders_list
+      description: Get paginated orders for restaurants owned by authenticated restaurant
+        owner
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Page number
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+        description: Results per page
+      - in: query
+        name: restaurant_id
+        schema:
+          type: string
+        description: Filter orders by restaurant ID
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderList'
+          description: ''
+  /api/v1/restaurant/{id}/operating-hours/:
+    get:
+      operationId: restaurant_operating_hours_list
+      description: List operating hours for a restaurant (owner only)
+      summary: List operating hours
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
       - name: page
         required: false
         in: query
         description: A page number within the paginated result set.
         schema:
           type: integer
-      - in: query
-        name: search
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: pk
         schema:
           type: string
-        description: Search by name or cuisine
+          format: uuid
+        description: Restaurant UUID
+        required: true
       tags:
       - Restaurants
       security:
       - jwtAuth: []
-      - BearerAuth: []
-      - {}
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedRestaurantListList'
+                $ref: '#/components/schemas/PaginatedOperatingHoursList'
           description: ''
     post:
-      operationId: v1_restaurant_restaurants_create
-      description: Create a new restaurant (Only Owner)
+      operationId: restaurant_operating_hours_create
+      description: Create operating hours for a restaurant (owner only)
+      summary: Create operating hours
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: pk
+        schema:
+          type: string
+          format: uuid
+        description: Restaurant UUID
+        required: true
       tags:
       - Restaurants
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Restaurant'
-            examples:
-              ExampleRequest:
-                value:
-                  name: Pizza Hub
-                  cuisine_type: Italian
-                  delivery_fee: '50.00'
-                  is_open: true
-                summary: Example Request
+              $ref: '#/components/schemas/OperatingHoursRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Restaurant'
+              $ref: '#/components/schemas/OperatingHoursRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Restaurant'
+              $ref: '#/components/schemas/OperatingHoursRequest'
         required: true
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Restaurant'
-              examples:
-                ExampleRequest:
-                  value:
-                    name: Pizza Hub
-                    cuisine_type: Italian
-                    delivery_fee: '50.00'
-                    is_open: true
-                  summary: Example Request
+                $ref: '#/components/schemas/OperatingHours'
           description: ''
-  /api/v1/restaurant/restaurants/{id}:
+  /api/v1/restaurant/{id}/operating-hours/{day}/:
+    put:
+      operationId: restaurant_operating_hours_update
+      description: Update operating hours for a restaurant day
+      summary: Update operating hours
+      parameters:
+      - in: path
+        name: day
+        schema:
+          type: integer
+        description: Day of week (0=Monday … 6=Sunday)
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: pk
+        schema:
+          type: string
+          format: uuid
+        description: Restaurant UUID
+        required: true
+      tags:
+      - Restaurants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperatingHoursRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OperatingHoursRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OperatingHoursRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatingHours'
+          description: ''
+    patch:
+      operationId: restaurant_operating_hours_partial_update
+      description: Update operating hours for a restaurant day
+      summary: Update operating hours
+      parameters:
+      - in: path
+        name: day
+        schema:
+          type: integer
+        description: Day of week (0=Monday … 6=Sunday)
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: pk
+        schema:
+          type: string
+          format: uuid
+        description: Restaurant UUID
+        required: true
+      tags:
+      - Restaurants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOperatingHoursRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOperatingHoursRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOperatingHoursRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatingHours'
+          description: ''
+  /api/v1/restaurant/{id}/special-hours/:
     get:
-      operationId: v1_restaurant_restaurants_retrieve
-      description: Get restaurant details
+      operationId: restaurant_special_hours_list
+      description: List special hours for a restaurant (owner only)
+      summary: List special hours
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: pk
+        schema:
+          type: string
+          format: uuid
+        description: Restaurant UUID
+        required: true
+      tags:
+      - Restaurants
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSpecialHoursList'
+          description: ''
+    post:
+      operationId: restaurant_special_hours_create
+      description: Create special hours for a restaurant (owner only)
+      summary: Create special hours
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: pk
+        schema:
+          type: string
+          format: uuid
+        description: Restaurant UUID
+        required: true
+      tags:
+      - Restaurants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpecialHoursRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SpecialHoursRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SpecialHoursRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpecialHours'
+          description: ''
+  /api/v1/restaurant/{id}/special-hours/{special_hours_id}/:
+    delete:
+      operationId: restaurant_special_hours_destroy
+      description: Delete a special hours entry for a restaurant
+      summary: Delete special hours
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: pk
+        schema:
+          type: string
+          format: uuid
+        description: Restaurant UUID
+        required: true
+      - in: path
+        name: special_hours_id
+        schema:
+          type: string
+          format: uuid
+        description: Special hours UUID
+        required: true
+      tags:
+      - Restaurants
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/restaurant/{id}/is-open/:
+    get:
+      operationId: restaurant_is_open_retrieve
+      description: Check whether a restaurant is currently open
+      summary: Check if restaurant is open
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: pk
+        schema:
+          type: string
+          format: uuid
+        description: Restaurant UUID
+        required: true
+      tags:
+      - Restaurants
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantAvailability'
+          description: ''
+  /api/v1/restaurant/{id}/next-opening/:
+    get:
+      operationId: restaurant_next_opening_retrieve
+      description: Get the next opening time for a restaurant
+      summary: Next opening time
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: pk
+        schema:
+          type: string
+          format: uuid
+        description: Restaurant UUID
+        required: true
+      tags:
+      - Restaurants
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantAvailability'
+          description: ''
+  /api/v1/order/orders:
+    get:
+      operationId: order_orders_list
+      description: List orders visible to the authenticated user. Supports pagination
+        (?page, ?page_size), filtering, and search.
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: has_rating
+        schema:
+          type: boolean
+      - in: query
+        name: max_amount
+        schema:
+          type: number
+      - in: query
+        name: min_amount
+        schema:
+          type: number
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Page number
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+        description: Results per page (max 100)
+      - in: query
+        name: restaurant
+        schema:
+          type: string
+        description: Filter by restaurant UUID
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search order number or restaurant name
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by order status
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderList'
+          description: ''
+    post:
+      operationId: order_orders_create
+      description: Create a new order (Customer only)
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+            examples:
+              CreateOrderExample:
+                value:
+                  restaurant: uuid
+                  delivery_address: 123 Main Street
+                  items:
+                  - menu_item: uuid
+                    quantity: 2
+                summary: Create Order Example
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              examples:
+                CreateOrderExample:
+                  value:
+                    restaurant: uuid
+                    delivery_address: 123 Main Street
+                    items:
+                    - menu_item: uuid
+                      quantity: 2
+                  summary: Create Order Example
+          description: ''
+  /api/v1/order/orders/{id}:
+    get:
+      operationId: order_orders_retrieve
+      description: Retrieve a specific order
       parameters:
       - in: path
         name: id
@@ -1511,707 +1976,541 @@ paths:
           description: Unique identifier (UUID)
         required: true
       tags:
-      - Restaurants
+      - Orders
       security:
       - jwtAuth: []
-      - BearerAuth: []
-      - {}
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RestaurantDetail'
-          description: ''
-    put:
-      operationId: v1_restaurant_restaurants_update
-      description: Update an existing restaurant
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - Restaurants
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Restaurant'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Restaurant'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Restaurant'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Restaurant'
-          description: ''
-    patch:
-      operationId: v1_restaurant_restaurants_partial_update
-      description: Partially update an existing restaurant
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - Restaurants
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedRestaurant'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedRestaurant'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedRestaurant'
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Restaurant'
+                $ref: '#/components/schemas/Order'
           description: ''
     delete:
-      operationId: v1_restaurant_restaurants_destroy
-      description: Delete a restaurant
+      operationId: order_orders_destroy
+      description: Delete an order
       parameters:
       - in: path
         name: id
         schema:
           type: string
+          format: uuid
+          description: Unique identifier (UUID)
         required: true
-      tags:
-      - Restaurants
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/restaurant/restaurants/{restaurant_id}/menu/:
-    get:
-      operationId: v1_restaurant_restaurants_menu_list
-      description: Get menu items for a restaurant
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - in: path
-        name: restaurant_id
-        schema:
-          type: string
-        description: Restaurant ID
-        required: true
-      tags:
-      - Menu
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedMenuItemList'
-          description: ''
-  /api/v1/users/auth/login/:
-    post:
-      operationId: v1_users_auth_login_create
-      description: |2
-
-        Login and receive JWT tokens
-
-        Use token:
-        Authorization: Bearer <access_token>
-      summary: Login
-      tags:
-      - Auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Login'
-            examples:
-              Login:
-                value:
-                  username: user@test.com
-                  password: StrongPass123!
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Login'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Login'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LoginResponse'
-              examples:
-                Login:
-                  value:
-                    username: user@test.com
-                    password: StrongPass123!
-          description: ''
-  /api/v1/users/auth/logout/:
-    post:
-      operationId: v1_users_auth_logout_create
-      description: Logout API endpoint.Invalidates a user's refresh token by blacklisting
-        it.
-      tags:
-      - Auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Logout'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Logout'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Logout'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/v1/users/auth/refresh/:
-    post:
-      operationId: v1_users_auth_refresh_create
-      description: |-
-        Takes a refresh type JSON web token and returns an access type JSON web
-        token if the refresh token is valid.
-      tags:
-      - v1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenRefresh'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TokenRefresh'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TokenRefresh'
-        required: true
-      security:
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenRefresh'
-          description: ''
-  /api/v1/users/auth/register/:
-    post:
-      operationId: v1_users_auth_register_create
-      description: Register a new user
-      tags:
-      - Auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserRegistration'
-            examples:
-              Register:
-                value:
-                  email: user@test.com
-                  username: user
-                  password: StrongPass123!
-                  user_type: customer
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/UserRegistration'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/UserRegistration'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserRegistrationResponse'
-              examples:
-                Register:
-                  value:
-                    email: user@test.com
-                    username: user
-                    password: StrongPass123!
-                    user_type: customer
-          description: ''
-  /api/v1/users/auth/resend-verification/:
-    post:
-      operationId: v1_users_auth_resend_verification_create
-      description: Resend the email verification link for an unverified user.
-      tags:
-      - Auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ResendVerification'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ResendVerification'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ResendVerification'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/v1/users/auth/reset-confirm/:
-    post:
-      operationId: v1_users_auth_reset_confirm_create
-      description: Handle password reset confirmation.
-      tags:
-      - Auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ResetPasswordConfirm'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ResetPasswordConfirm'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ResetPasswordConfirm'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/v1/users/auth/reset-request/:
-    post:
-      operationId: v1_users_auth_reset_request_create
-      description: Handle password reset email request.
-      tags:
-      - Auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ResetPasswordRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ResetPasswordRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ResetPasswordRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/v1/users/auth/verify-email/:
-    get:
-      operationId: v1_users_auth_verify_email_retrieve
-      description: Verify a user's email address
-      tags:
-      - Auth
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/v1/users/favorites/menu-items/:
-    get:
-      operationId: v1_users_favorites_menu_items_list
-      description: List favorite menu items for the authenticated user
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      tags:
-      - Users
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedFavoriteMenuItemList'
-          description: ''
-    post:
-      operationId: v1_users_favorites_menu_items_create
-      description: Add a menu item to favorites
-      tags:
-      - Users
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                item_id:
-                  type: string
-              required:
-              - item_id
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/v1/users/favorites/menu-items/{id}/:
-    delete:
-      operationId: v1_users_favorites_menu_items_destroy
-      description: Remove a menu item from favorites
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      - in: path
-        name: pk
-        schema:
-          type: string
-        description: Menu item ID
-        required: true
-      tags:
-      - Users
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/users/favorites/menu-items/{id}/check/:
-    get:
-      operationId: v1_users_favorites_menu_items_check_retrieve
-      description: Check if a menu item is favorited by the authenticated user
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      - in: path
-        name: pk
-        schema:
-          type: string
-        description: Menu item ID
-        required: true
-      tags:
-      - Users
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        type:
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-                description: Unspecified response body
-          description: ''
-        properties:
-          content:
-            application/json:
-              schema:
-                is_favorited:
-                  type: boolean
-          description: ''
-  /api/v1/users/favorites/restaurants/:
-    get:
-      operationId: v1_users_favorites_restaurants_list
-      description: List favorite restaurants for the authenticated user
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      tags:
-      - Users
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedFavoriteRestaurantList'
-          description: ''
-    post:
-      operationId: v1_users_favorites_restaurants_create
-      description: Add a restaurant to favorites
-      tags:
-      - Users
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                restaurant_id:
-                  type: string
-              required:
-              - restaurant_id
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/v1/users/favorites/restaurants/{id}/:
-    delete:
-      operationId: v1_users_favorites_restaurants_destroy
-      description: Remove a restaurant from favorites
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      - in: path
-        name: pk
-        schema:
-          type: string
-        description: Restaurant ID
-        required: true
-      tags:
-      - Users
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/users/favorites/restaurants/{id}/check/:
-    get:
-      operationId: v1_users_favorites_restaurants_check_retrieve
-      description: Check if a restaurant is favorited by the authenticated user
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      - in: path
-        name: pk
-        schema:
-          type: string
-        description: Restaurant ID
-        required: true
-      tags:
-      - Users
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        type:
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-                description: Unspecified response body
-          description: ''
-        properties:
-          content:
-            application/json:
-              schema:
-                is_favorited:
-                  type: boolean
-          description: ''
-  /api/v1/users/order-stats/:
-    get:
-      operationId: v1_users_order_stats_retrieve
-      description: Get statistics for the authenticated user's orders
       tags:
       - Orders
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+    patch:
+      operationId: order_orders_partial_update
+      description: Partially update an order
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderStats'
+                $ref: '#/components/schemas/Order'
           description: ''
-  /api/v1/users/profile/change-password/:
-    post:
-      operationId: v1_users_profile_change_password_create
-      description: |-
-        Handle password change request for authenticated user.
-
-        Validates current password, sets new password,
-        and blacklists all existing JWT tokens to force re-login.
+    put:
+      operationId: order_orders_update
+      description: Update an order
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        required: true
       tags:
-      - Users
+      - Orders
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChangePassword'
+              $ref: '#/components/schemas/OrderRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ChangePassword'
+              $ref: '#/components/schemas/OrderRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ChangePassword'
+              $ref: '#/components/schemas/OrderRequest'
         required: true
       security:
       - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/v1/users/profile/customer/:
-    get:
-      operationId: v1_users_profile_customer_retrieve
-      description: Get logged-in customer profile details
-      summary: Get user profile
-      tags:
-      - Users
-      security:
       - jwtAuth: []
-      - BearerAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CustomerProfile'
+                $ref: '#/components/schemas/Order'
           description: ''
-    put:
-      operationId: v1_users_profile_customer_update
-      description: Update the logged-in customer's profile details
-      summary: Update user profile
+  /api/v1/order/orders/{id}/assign_driver:
+    post:
+      operationId: order_orders_assign_driver_create
+      description: Assign a driver to the order (Restaurant owner only). Order must
+        be ready.
+      summary: Assign driver
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Order UUID
+        required: true
       tags:
-      - Users
+      - Orders
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CustomerProfileUpdate'
+              $ref: '#/components/schemas/AssignDriverRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/CustomerProfileUpdate'
+              $ref: '#/components/schemas/AssignDriverRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/CustomerProfileUpdate'
+              $ref: '#/components/schemas/AssignDriverRequestRequest'
+        required: true
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CustomerProfile'
+                $ref: '#/components/schemas/AssignDriverResponse'
           description: ''
-  /api/v1/users/profile/customer/addresses/:
+  /api/v1/order/orders/{id}/eta:
     get:
-      operationId: v1_users_profile_customer_addresses_list
-      description: Return all addresses associated with the authenticated customer's
-        profile.
-      summary: List user addresses
+      operationId: order_orders_eta_retrieve
+      description: Get estimated delivery time for the order
+      summary: Get order ETA
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Order UUID
+        required: true
       tags:
-      - Users
+      - Orders
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderETAResponse'
+          description: ''
+  /api/v1/order/orders/{id}/reorder:
+    post:
+      operationId: order_orders_reorder_create
+      description: Reorder from a previous order
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/order/orders/{id}/update_status:
+    post:
+      operationId: order_orders_update_status_create
+      description: Update order status based on allowed transitions (owner or assigned
+        driver).
+      summary: Update order status
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Order UUID
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderStatusRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderStatusRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderStatusRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateOrderStatusResponse'
+          description: ''
+  /api/v1/order/restaurants/{restaurant_id}/orders/ws/:
+    get:
+      operationId: order_restaurants_orders_ws_retrieve
+      description: Returns connection details for the Restaurant Order Section WebSocket.
+        Connect with a JWT access token as the `token` query parameter.
+      summary: Restaurant Order Section WebSocket info
+      parameters:
+      - in: path
+        name: restaurant_id
+        schema:
+          type: string
+          format: uuid
+        description: Restaurant UUID owned by the authenticated owner
+        required: true
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantOrderWebSocketInfo'
+              examples:
+                WebSocketInfo:
+                  value:
+                    restaurant_id: 11111111-1111-1111-1111-111111111111
+                    websocket_path: /ws/orders/management/<restaurant_id>/
+                    websocket_url_template: ws://<host>/ws/orders/management/<restaurant_id>/?token=<access_token>
+                    auth: JWT access token via query param `token`
+                    events:
+                    - connected
+                    - order_created
+                    - status_updated
+                    - driver_assigned
+                    payload_example:
+                      event: status_updated
+                      order_id: uuid
+                      status: preparing
+                  summary: WebSocket Info
+          description: ''
+  /api/v1/order/review:
+    get:
+      operationId: order_review_list
+      description: List reviews with optional filters
+      summary: List reviews
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: Page size (limit/offset)
+      - in: query
+        name: menu_item
+        schema:
+          type: string
+        description: Filter by menu item UUID
+      - in: query
+        name: offset
+        schema:
+          type: integer
+        description: Offset for pagination
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: Order by created_at or rating
+      - in: query
+        name: rating
+        schema:
+          type: integer
+        description: Filter by rating
+      - in: query
+        name: restaurant
+        schema:
+          type: string
+        description: Filter by restaurant UUID
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReviewList'
+          description: ''
+    post:
+      operationId: order_review_create
+      description: Create review for a delivered order (Customer only)
+      summary: Create review
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+            examples:
+              ReviewExample:
+                value:
+                  order: uuid
+                  restaurant: uuid
+                  menu_item: uuid
+                  rating: 5
+                  comment: Great food!
+                summary: Review Example
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+              examples:
+                ReviewExample:
+                  value:
+                    order: uuid
+                    restaurant: uuid
+                    menu_item: uuid
+                    rating: 5
+                    comment: Great food!
+                  summary: Review Example
+          description: ''
+  /api/v1/order/{order_id}/rate/:
+    post:
+      operationId: order_rate_create
+      description: Create a rating for a specific order
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+        description: ID of the order to rate
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRatingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderRatingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderRatingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderRating'
+          description: ''
+  /api/v1/order/{order_id}/rating/:
+    get:
+      operationId: order_rating_retrieve
+      description: Retrieve your rating for a specific order
+      summary: Get order rating
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+        description: Order UUID
+        required: true
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderRating'
+          description: ''
+    put:
+      operationId: order_rating_update
+      description: Update your rating for a specific order
+      summary: Update order rating
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+        description: Order UUID
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRatingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderRatingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderRatingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderRating'
+          description: ''
+    patch:
+      operationId: order_rating_partial_update
+      description: Handles GET and PUT/PATCH for an order rating.
+      summary: Partially update order rating
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+        description: Order UUID
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderRatingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderRatingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderRatingRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderRating'
+          description: ''
+  /api/v1/order/users/my-ratings/:
+    get:
+      operationId: order_users_my_ratings_list
+      description: List all ratings created by the authenticated user
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderRatingList'
+          description: ''
+  /api/v1/order/instruction-templates/:
+    get:
+      operationId: order_instruction_templates_list
+      description: List active instruction templates, optionally filtered by category
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
@@ -2219,277 +2518,246 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Address'
+                  $ref: '#/components/schemas/InstructionTemplate'
           description: ''
-    post:
-      operationId: v1_users_profile_customer_addresses_create
-      description: Create a new address for the authenticated customer.
-      summary: Create an address
-      tags:
-      - Users
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Address'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Address'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Address'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Address'
-          description: ''
-  /api/v1/users/profile/customer/addresses/{id}/:
+  /api/v1/order/{order_id}/cancel/:
     get:
-      operationId: v1_users_profile_customer_addresses_retrieve
-      description: Retrieve a specific address belonging to the authenticated customer.
-      summary: Get address details
+      operationId: order_cancel_retrieve
+      description: Check if an order can be cancelled and preview refund details
       parameters:
       - in: path
-        name: id
+        name: order_id
         schema:
           type: string
-          format: uuid
+        description: ID of the order
         required: true
       tags:
-      - Users
+      - Orders
       security:
       - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Address'
-          description: ''
-    put:
-      operationId: v1_users_profile_customer_addresses_update
-      description: Update an existing address for the authenticated customer.
-      summary: Update address
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - Users
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Address'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Address'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Address'
-        required: true
-      security:
       - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Address'
-          description: ''
-    delete:
-      operationId: v1_users_profile_customer_addresses_destroy
-      description: Delete a specific address from the authenticated customer's profile.
-      summary: Delete address
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - Users
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/users/profile/driver/:
-    get:
-      operationId: v1_users_profile_driver_retrieve
-      description: Fetch the authenticated driver's profile details.
-      summary: Get driver profile
-      tags:
-      - Users
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DriverProfile'
-          description: ''
-    put:
-      operationId: v1_users_profile_driver_update
-      description: Update the authenticated driver's profile details.
-      summary: Update driver profile
-      tags:
-      - Users
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DriverProfile'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/DriverProfile'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/DriverProfile'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DriverProfile'
-          description: ''
-  /api/v1/users/profile/email/change-confirm/:
-    post:
-      operationId: v1_users_profile_email_change_confirm_create
-      description: Confirm new email and complete email update process.
-      tags:
-      - Users
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ConfirmEmailChange'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ConfirmEmailChange'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ConfirmEmailChange'
-        required: true
-      security:
-      - jwtAuth: []
-      - BearerAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
                 type: object
-                additionalProperties: {}
+                properties:
+                  can_cancel:
+                    type: boolean
+                  message:
+                    type: string
+                  refund_amount:
+                    type: number
+                  refund_percentage:
+                    type: number
           description: ''
-  /api/v1/users/profile/email/change-request/:
     post:
-      operationId: v1_users_profile_email_change_request_create
-      description: Initiate email change request.
+      operationId: order_cancel_create
+      description: Cancel an order and get refund details
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+        description: ID of the order to cancel
+        required: true
       tags:
-      - Users
+      - Orders
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateEmail'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/UpdateEmail'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/UpdateEmail'
+              type: object
+              properties:
+                reason:
+                  type: string
+                reason_detail:
+                  type: string
+              required:
+              - reason
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  refund_amount:
+                    type: number
+                  refund_percentage:
+                    type: number
+                  refund_method:
+                    type: string
+          description: ''
+  /api/v1/order/{order_id}/cancel/info/:
+    get:
+      operationId: order_cancel_info_retrieve
+      description: Check if an order can be cancelled and preview refund details
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+        description: ID of the order
         required: true
+      tags:
+      - Orders
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
                 type: object
-                additionalProperties: {}
+                properties:
+                  can_cancel:
+                    type: boolean
+                  message:
+                    type: string
+                  refund_amount:
+                    type: number
+                  refund_percentage:
+                    type: number
           description: ''
-  /api/v1/users/profile/email/current-confirm/:
-    get:
-      operationId: v1_users_profile_email_current_confirm_retrieve
-      description: Confirm old email using token from query params.
+    post:
+      operationId: order_cancel_info_create
+      description: Cancel an order and get refund details
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+        description: ID of the order to cancel
+        required: true
       tags:
-      - Users
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                reason_detail:
+                  type: string
+              required:
+              - reason
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
                 type: object
-                additionalProperties: {}
+                properties:
+                  message:
+                    type: string
+                  refund_amount:
+                    type: number
+                  refund_percentage:
+                    type: number
+                  refund_method:
+                    type: string
           description: ''
-  /api/v1/users/profile/restaurant-owner/:
+  /api/v1/order/{restaurant_id}/cancellation-policy/:
     get:
-      operationId: v1_users_profile_restaurant_owner_retrieve
-      description: Retrieve and update authenticated restaurant owner profile.
-      summary: Get restaurant owner profile
+      operationId: order_cancellation_policy_retrieve
+      description: Retrieve or update cancellation policy for a restaurant
+      parameters:
+      - in: path
+        name: restaurant_id
+        schema:
+          type: string
+        description: ID of the restaurant
+        required: true
       tags:
-      - Users
+      - Orders
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RestaurantOwnerProfile'
+                $ref: '#/components/schemas/CancellationPolicy'
           description: ''
     put:
-      operationId: v1_users_profile_restaurant_owner_update
-      description: Retrieve and update authenticated restaurant owner profile.
-      summary: Update restaurant owner profile
+      operationId: order_cancellation_policy_update
+      description: Retrieve or update cancellation policy for a restaurant
+      parameters:
+      - in: path
+        name: restaurant_id
+        schema:
+          type: string
+        description: ID of the restaurant
+        required: true
       tags:
-      - Users
+      - Orders
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RestaurantOwnerProfile'
+              $ref: '#/components/schemas/CancellationPolicyRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/RestaurantOwnerProfile'
+              $ref: '#/components/schemas/CancellationPolicyRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/RestaurantOwnerProfile'
+              $ref: '#/components/schemas/CancellationPolicyRequest'
       security:
       - jwtAuth: []
-      - BearerAuth: []
+      - jwtAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RestaurantOwnerProfile'
+                $ref: '#/components/schemas/CancellationPolicy'
+          description: ''
+    patch:
+      operationId: order_cancellation_policy_partial_update
+      description: Retrieve or update cancellation policy for a restaurant
+      parameters:
+      - in: path
+        name: restaurant_id
+        schema:
+          type: string
+        description: ID of the restaurant
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCancellationPolicyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCancellationPolicyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCancellationPolicyRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancellationPolicy'
           description: ''
 components:
   schemas:
@@ -2524,38 +2792,121 @@ components:
       - id
       - label
       - pin_code
+    AddressRequest:
+      type: object
+      description: |-
+        Serializer for Address model.
+
+        Handles representation of user addresses including:
+        - pin code
+        - label (e.g., Home, Work)
+        - full address
+        - default flag
+      properties:
+        pin_code:
+          type: string
+          minLength: 1
+          maxLength: 10
+        label:
+          type: string
+          minLength: 1
+          maxLength: 50
+        address:
+          type: string
+          minLength: 1
+        is_default:
+          type: boolean
+      required:
+      - address
+      - label
+      - pin_code
+    AnalyticsPack:
+      type: object
+      properties:
+        revenue_trends:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardRevenueTrend'
+        sales_by_category:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardCategorySales'
+        popular_times:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardPopularTime'
+      required:
+      - popular_times
+      - revenue_trends
+      - sales_by_category
+    AssignDriverRequestRequest:
+      type: object
+      properties:
+        driver_id:
+          type: string
+          format: uuid
+      required:
+      - driver_id
+    AssignDriverResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
     CancellationPolicy:
       type: object
       properties:
         full_refund_window:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         partial_refund_window:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         partial_refund_percentage:
           type: integer
           maximum: 100
           minimum: 0
         allow_customer_cancellation:
           type: boolean
-    Category4edEnum:
-      enum:
-      - appetizer
-      - main_course
-      - dessert
-      - Beverage
-      - side_dish
-      type: string
-      description: |-
-        * `appetizer` - Appetizer
-        * `main_course` - Main Course
-        * `dessert` - Dessert
-        * `Beverage` - beverage
-        * `side_dish` - Side Dish
-    ChangePassword:
+    CancellationPolicyRequest:
+      type: object
+      properties:
+        full_refund_window:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        partial_refund_window:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        partial_refund_percentage:
+          type: integer
+          maximum: 100
+          minimum: 0
+        allow_customer_cancellation:
+          type: boolean
+    CategorySales:
+      type: object
+      properties:
+        category:
+          type: string
+        total_orders:
+          type: integer
+        percentage:
+          type: number
+          format: double
+      required:
+      - category
+      - percentage
+      - total_orders
+    ChangePasswordRequest:
       type: object
       description: |-
         Serializer for handling password change requests.
@@ -2567,6 +2918,7 @@ components:
         current_password:
           type: string
           writeOnly: true
+          minLength: 1
         new_password:
           type: string
           writeOnly: true
@@ -2579,12 +2931,13 @@ components:
       - confirm_password
       - current_password
       - new_password
-    ConfirmEmailChange:
+    ConfirmEmailChangeRequest:
       type: object
       description: Finalizes email change after both confirmations.
       properties:
         new_token:
           type: string
+          minLength: 1
       required:
       - new_token
     ContactPreferenceEnum:
@@ -2661,7 +3014,7 @@ components:
       - loyalty_points
       - total_orders
       - user
-    CustomerProfileUpdate:
+    CustomerProfileUpdateRequest:
       type: object
       description: |-
         Serializer for updating CustomerProfile.
@@ -2675,7 +3028,7 @@ components:
       properties:
         avatar:
           type: string
-          format: uri
+          format: binary
           nullable: true
         default_address:
           type: string
@@ -2685,7 +3038,44 @@ components:
         addresses:
           type: array
           items:
-            $ref: '#/components/schemas/Address'
+            $ref: '#/components/schemas/AddressRequest'
+    DashboardCategorySales:
+      type: object
+      properties:
+        category:
+          type: string
+        total_orders:
+          type: integer
+        percentage:
+          type: number
+          format: double
+      required:
+      - category
+      - percentage
+      - total_orders
+    DashboardPopularTime:
+      type: object
+      properties:
+        hour:
+          type: integer
+        order_count:
+          type: integer
+      required:
+      - hour
+      - order_count
+    DashboardRevenueTrend:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - date
+      - revenue
     DietaryInfoEnum:
       enum:
       - vegetarian
@@ -2700,6 +3090,56 @@ components:
         * `gluten_free` - Gluten Free
         * `dairy_free` - Dairy Free
         * `none` - None
+    DriverList:
+      type: object
+      description: |-
+        Serializer for listing drivers available for order assignment.
+
+        `driver_id` is the CustomUser id expected by assign_driver.
+      properties:
+        driver_id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        phone_number:
+          type: string
+          readOnly: true
+        vehicle_type:
+          allOf:
+          - $ref: '#/components/schemas/VehicleTypeEnum'
+          description: |-
+            Type of Vehicle
+
+            * `bike` - Bike
+            * `scooter` - Scooter
+            * `car` - Car
+        vehicle_number:
+          type: string
+          maxLength: 20
+        is_available:
+          type: boolean
+        total_deliveries:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        average_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+      required:
+      - driver_id
+      - email
+      - phone_number
+      - username
+      - vehicle_number
     DriverProfile:
       type: object
       description: |-
@@ -2736,8 +3176,9 @@ components:
           type: boolean
         total_deliveries:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
         average_rating:
           type: string
           format: decimal
@@ -2746,6 +3187,56 @@ components:
       - id
       - license_number
       - vehicle_number
+    DriverProfileRequest:
+      type: object
+      description: |-
+        Serializer for DriverProfile model.
+
+        Used for retrieving driver profile details including:
+        vehicle info, availability, and performance metrics.
+      properties:
+        avatar:
+          type: string
+          format: binary
+          nullable: true
+        vehicle_type:
+          allOf:
+          - $ref: '#/components/schemas/VehicleTypeEnum'
+          description: |-
+            Type of Vehicle
+
+            * `bike` - Bike
+            * `scooter` - Scooter
+            * `car` - Car
+        vehicle_number:
+          type: string
+          minLength: 1
+          maxLength: 20
+        license_number:
+          type: string
+          minLength: 1
+          maxLength: 20
+        is_available:
+          type: boolean
+        total_deliveries:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        average_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+      required:
+      - license_number
+      - vehicle_number
+    FavoriteCheckResponse:
+      type: object
+      properties:
+        is_favorited:
+          type: boolean
+      required:
+      - is_favorited
     FavoriteMenuItem:
       type: object
       properties:
@@ -2782,24 +3273,7 @@ components:
       - created_at
       - id
       - restaurant
-    InstructionTemplate:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-          description: Unique identifier (UUID)
-        category:
-          $ref: '#/components/schemas/InstructionTemplateCategoryEnum'
-        text:
-          type: string
-          maxLength: 200
-      required:
-      - category
-      - id
-      - text
-    InstructionTemplateCategoryEnum:
+    InstructionCategoryEnum:
       enum:
       - delivery
       - food
@@ -2809,6 +3283,23 @@ components:
         * `delivery` - Delivery
         * `food` - Food
         * `packaging` - Packaging
+    InstructionTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID)
+        category:
+          $ref: '#/components/schemas/InstructionCategoryEnum'
+        text:
+          type: string
+          maxLength: 200
+      required:
+      - category
+      - id
+      - text
     ItemPopularity:
       type: object
       properties:
@@ -2823,12 +3314,13 @@ components:
       - id
       - name
       - total_quantity
-    Login:
+    LoginRequest:
       type: object
       description: Serializer responsible for handling user login.
       properties:
         username:
           type: string
+          minLength: 1
         password:
           type: string
           minLength: 8
@@ -2853,7 +3345,7 @@ components:
       - access
       - refresh
       - user
-    Logout:
+    LogoutRequest:
       type: object
       description: |-
         Serializer responsible for handling user logout.
@@ -2866,11 +3358,31 @@ components:
       properties:
         refresh_token:
           type: string
+          minLength: 1
       required:
       - refresh_token
+    MenuCategoryEnum:
+      enum:
+      - appetizer
+      - main_course
+      - dessert
+      - Beverage
+      - side_dish
+      type: string
+      description: |-
+        * `appetizer` - Appetizer
+        * `main_course` - Main Course
+        * `dessert` - Dessert
+        * `Beverage` - beverage
+        * `side_dish` - Side Dish
     MenuItem:
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Unique identifier (UUID)
         restaurant:
           type: string
           format: uuid
@@ -2885,7 +3397,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
         category:
-          $ref: '#/components/schemas/Category4edEnum'
+          $ref: '#/components/schemas/MenuCategoryEnum'
         dietary_info:
           $ref: '#/components/schemas/DietaryInfoEnum'
         image:
@@ -2896,17 +3408,19 @@ components:
           type: boolean
         preparation_time:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
           description: Preparation time
         is_favorited:
-          type: string
+          type: boolean
           readOnly: true
         favorite_count:
           type: integer
           readOnly: true
       required:
       - favorite_count
+      - id
       - is_favorited
       - name
       - preparation_time
@@ -2928,7 +3442,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
         category:
-          $ref: '#/components/schemas/Category4edEnum'
+          $ref: '#/components/schemas/MenuCategoryEnum'
         dietary_info:
           $ref: '#/components/schemas/DietaryInfoEnum'
         image:
@@ -2939,8 +3453,9 @@ components:
           type: boolean
         preparation_time:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
           description: Preparation time
       required:
       - name
@@ -2966,6 +3481,50 @@ components:
       required:
       - id
       - name
+    MenuItemRequest:
+      type: object
+      properties:
+        restaurant:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        category:
+          $ref: '#/components/schemas/MenuCategoryEnum'
+        dietary_info:
+          $ref: '#/components/schemas/DietaryInfoEnum'
+        image:
+          type: string
+          format: binary
+          nullable: true
+        is_available:
+          type: boolean
+        preparation_time:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Preparation time
+      required:
+      - name
+      - preparation_time
+      - restaurant
+    MessageResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+        message:
+          type: string
     MostOrderedItem:
       type: object
       properties:
@@ -3011,6 +3570,25 @@ components:
       - id
       - opening_time
       - restaurant
+    OperatingHoursRequest:
+      type: object
+      properties:
+        day_of_week:
+          type: integer
+          maximum: 6
+          minimum: 0
+        opening_time:
+          type: string
+          format: time
+        closing_time:
+          type: string
+          format: time
+        is_closed:
+          type: boolean
+      required:
+      - closing_time
+      - day_of_week
+      - opening_time
     Order:
       type: object
       properties:
@@ -3023,13 +3601,16 @@ components:
           type: string
           format: uuid
           description: Unique identifier (UUID)
-        delivery_address:
+        customer_name:
           type: string
-        items:
+          readOnly: true
+        ordered_items:
           type: array
           items:
-            $ref: '#/components/schemas/OrderItem'
-          writeOnly: true
+            type: string
+          readOnly: true
+        delivery_address:
+          type: string
         subtotal:
           type: string
           format: decimal
@@ -3052,7 +3633,7 @@ components:
           readOnly: true
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusEnum'
+          - $ref: '#/components/schemas/OrderStatusEnum'
           readOnly: true
         created_at:
           type: string
@@ -3070,15 +3651,24 @@ components:
           type: boolean
       required:
       - created_at
+      - customer_name
       - delivery_address
       - delivery_fee
       - id
-      - items
+      - ordered_items
       - restaurant
       - status
       - subtotal
       - tax
       - total_amount
+    OrderETAResponse:
+      type: object
+      properties:
+        estimated_delivery_time:
+          type: string
+          format: date-time
+      required:
+      - estimated_delivery_time
     OrderItem:
       type: object
       properties:
@@ -3088,8 +3678,27 @@ components:
           description: Unique identifier (UUID)
         quantity:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
+        special_instructions:
+          type: string
+          nullable: true
+      required:
+      - menu_item
+      - quantity
+    OrderItemRequest:
+      type: object
+      properties:
+        menu_item:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
         special_instructions:
           type: string
           nullable: true
@@ -3146,6 +3755,68 @@ components:
       - order
       - overall_rating
       - packaging_quality
+    OrderRatingRequest:
+      type: object
+      properties:
+        order:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        food_quality:
+          type: integer
+          maximum: 5
+          minimum: 1
+        delivery_speed:
+          type: integer
+          maximum: 5
+          minimum: 1
+        packaging_quality:
+          type: integer
+          maximum: 5
+          minimum: 1
+        comment:
+          type: string
+          nullable: true
+        would_recommend:
+          type: boolean
+        had_issues:
+          type: boolean
+        issue_description:
+          type: string
+          nullable: true
+      required:
+      - delivery_speed
+      - food_quality
+      - order
+      - packaging_quality
+    OrderRequest:
+      type: object
+      properties:
+        restaurant:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        delivery_address:
+          type: string
+          minLength: 1
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemRequest'
+          writeOnly: true
+        delivery_instructions:
+          type: string
+          maxLength: 500
+        contact_preference:
+          $ref: '#/components/schemas/ContactPreferenceEnum'
+        utensils_required:
+          type: boolean
+        contactless_delivery:
+          type: boolean
+      required:
+      - delivery_address
+      - items
+      - restaurant
     OrderStats:
       type: object
       properties:
@@ -3161,7 +3832,7 @@ components:
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
         favorite_restaurant:
           allOf:
-          - $ref: '#/components/schemas/FavoriteRestaurant'
+          - $ref: '#/components/schemas/OrderStatsFavoriteRestaurant'
           nullable: true
         most_ordered_item:
           allOf:
@@ -3191,6 +3862,20 @@ components:
       - total_orders
       - total_spent
       - weekly_revenue_trend
+    OrderStatsFavoriteRestaurant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        order_count:
+          type: integer
+      required:
+      - id
+      - name
+      - order_count
     OrderStatus:
       type: object
       properties:
@@ -3201,6 +3886,47 @@ components:
       required:
       - cancelled
       - delivered
+    OrderStatusEnum:
+      enum:
+      - pending
+      - confirmed
+      - preparing
+      - ready
+      - picked_up
+      - delivered
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `confirmed` - Confirmed
+        * `preparing` - Preparing
+        * `ready` - Ready
+        * `picked_up` - Picked Up
+        * `delivered` - Delivered
+        * `cancelled` - Cancelled
+    PaginatedDriverListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriverList'
     PaginatedFavoriteMenuItemList:
       type: object
       required:
@@ -3431,24 +4157,26 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SpecialHours'
-    PatchedCancellationPolicy:
+    PatchedCancellationPolicyRequest:
       type: object
       properties:
         full_refund_window:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         partial_refund_window:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         partial_refund_percentage:
           type: integer
           maximum: 100
           minimum: 0
         allow_customer_cancellation:
           type: boolean
-    PatchedMenuItem:
+    PatchedMenuItemRequest:
       type: object
       properties:
         restaurant:
@@ -3457,6 +4185,7 @@ components:
           description: Unique identifier (UUID)
         name:
           type: string
+          minLength: 1
           maxLength: 255
         description:
           type: string
@@ -3465,39 +4194,24 @@ components:
           format: decimal
           pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
         category:
-          $ref: '#/components/schemas/Category4edEnum'
+          $ref: '#/components/schemas/MenuCategoryEnum'
         dietary_info:
           $ref: '#/components/schemas/DietaryInfoEnum'
         image:
           type: string
-          format: uri
+          format: binary
           nullable: true
         is_available:
           type: boolean
         preparation_time:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
           description: Preparation time
-        is_favorited:
-          type: string
-          readOnly: true
-        favorite_count:
-          type: integer
-          readOnly: true
-    PatchedOperatingHours:
+    PatchedOperatingHoursRequest:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-          description: Unique identifier (UUID)
-        restaurant:
-          type: string
-          format: uuid
-          description: Unique identifier (UUID)
-          readOnly: true
         day_of_week:
           type: integer
           maximum: 6
@@ -3510,71 +4224,9 @@ components:
           format: time
         is_closed:
           type: boolean
-    PatchedOrder:
+    PatchedOrderRatingRequest:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-          description: Unique identifier (UUID)
-        restaurant:
-          type: string
-          format: uuid
-          description: Unique identifier (UUID)
-        delivery_address:
-          type: string
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/OrderItem'
-          writeOnly: true
-        subtotal:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
-          readOnly: true
-        delivery_fee:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
-          readOnly: true
-        tax:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
-          readOnly: true
-        total_amount:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
-          readOnly: true
-        status:
-          allOf:
-          - $ref: '#/components/schemas/StatusEnum'
-          readOnly: true
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-          description: When this record was created
-        delivery_instructions:
-          type: string
-          maxLength: 500
-        contact_preference:
-          $ref: '#/components/schemas/ContactPreferenceEnum'
-        utensils_required:
-          type: boolean
-        contactless_delivery:
-          type: boolean
-    PatchedOrderRating:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-          description: Unique identifier (UUID)
         order:
           type: string
           format: uuid
@@ -3591,9 +4243,6 @@ components:
           type: integer
           maximum: 5
           minimum: 1
-        overall_rating:
-          type: integer
-          readOnly: true
         comment:
           type: string
           nullable: true
@@ -3604,24 +4253,40 @@ components:
         issue_description:
           type: string
           nullable: true
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-          description: When this record was created
-    PatchedRestaurant:
+    PatchedOrderRequest:
       type: object
       properties:
-        id:
+        restaurant:
           type: string
           format: uuid
-          readOnly: true
           description: Unique identifier (UUID)
+        delivery_address:
+          type: string
+          minLength: 1
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemRequest'
+          writeOnly: true
+        delivery_instructions:
+          type: string
+          maxLength: 500
+        contact_preference:
+          $ref: '#/components/schemas/ContactPreferenceEnum'
+        utensils_required:
+          type: boolean
+        contactless_delivery:
+          type: boolean
+    PatchedRestaurantRequest:
+      type: object
+      properties:
         name:
           type: string
+          minLength: 1
           maxLength: 255
         address:
           type: string
+          minLength: 1
         cuisine_type:
           allOf:
           - $ref: '#/components/schemas/CuisineTypeEnum'
@@ -3639,6 +4304,7 @@ components:
         email:
           type: string
           format: email
+          minLength: 1
           maxLength: 255
         opening_time:
           type: string
@@ -3656,30 +4322,18 @@ components:
           pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
         logo:
           type: string
-          format: uri
+          format: binary
           nullable: true
-        average_rating:
-          type: number
-          format: double
-          readOnly: true
-        is_favorited:
-          type: string
-          readOnly: true
-        favorite_count:
+    PopularTime:
+      type: object
+      properties:
+        hour:
           type: integer
-          readOnly: true
-        is_open_now:
-          type: string
-          readOnly: true
-        next_opening_time:
-          type: string
-          readOnly: true
-        net_revenue:
-          type: string
-          readOnly: true
-        average_order_value:
-          type: string
-          readOnly: true
+        order_count:
+          type: integer
+      required:
+      - hour
+      - order_count
     PopularTiming:
       type: object
       properties:
@@ -3690,7 +4344,7 @@ components:
       required:
       - hour
       - order_count
-    ResendVerification:
+    ResendVerificationRequest:
       type: object
       description: |-
         Serializer for resending email verification links.
@@ -3703,14 +4357,16 @@ components:
         email:
           type: string
           format: email
+          minLength: 1
       required:
       - email
-    ResetPasswordConfirm:
+    ResetPasswordConfirmRequest:
       type: object
       description: Serializer to confirm and complete the password reset process.
       properties:
         token:
           type: string
+          minLength: 1
         new_password:
           type: string
           writeOnly: true
@@ -3723,13 +4379,14 @@ components:
       - confirm_password
       - new_password
       - token
-    ResetPasswordRequest:
+    ResetPasswordRequestRequest:
       type: object
       description: Serializer to handle password reset email requests.
       properties:
         email:
           type: string
           format: email
+          minLength: 1
       required:
       - email
     Restaurant:
@@ -3786,22 +4443,22 @@ components:
           format: double
           readOnly: true
         is_favorited:
-          type: string
+          type: boolean
           readOnly: true
         favorite_count:
           type: integer
           readOnly: true
         is_open_now:
-          type: string
+          type: boolean
           readOnly: true
         next_opening_time:
           type: string
           readOnly: true
         net_revenue:
-          type: string
+          type: number
           readOnly: true
         average_order_value:
-          type: string
+          type: number
           readOnly: true
       required:
       - address
@@ -3835,6 +4492,52 @@ components:
       - is_open
       - next_opening_time
       - restaurant_id
+    RestaurantDashboard:
+      type: object
+      properties:
+        restaurant_id:
+          type: string
+          format: uuid
+        restaurant_name:
+          type: string
+        active_orders:
+          type: integer
+        daily_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        new_customers:
+          type: integer
+        total_menu_items:
+          type: integer
+        net_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        total_orders:
+          type: integer
+        average_order_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        average_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+        analytics:
+          $ref: '#/components/schemas/AnalyticsPack'
+      required:
+      - active_orders
+      - analytics
+      - average_order_value
+      - average_rating
+      - daily_revenue
+      - net_revenue
+      - new_customers
+      - restaurant_id
+      - restaurant_name
+      - total_menu_items
+      - total_orders
     RestaurantDetail:
       type: object
       properties:
@@ -3897,16 +4600,23 @@ components:
           pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
         total_reviews:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
         revenue_trends:
-          type: string
+          type: array
+          items:
+            $ref: '#/components/schemas/RevenueTrend'
           readOnly: true
         sales_by_category:
-          type: string
+          type: array
+          items:
+            $ref: '#/components/schemas/CategorySales'
           readOnly: true
         popular_times:
-          type: string
+          type: array
+          items:
+            $ref: '#/components/schemas/PopularTime'
           readOnly: true
       required:
       - address
@@ -3928,6 +4638,10 @@ components:
         name:
           type: string
           maxLength: 255
+        logo:
+          type: string
+          format: uri
+          nullable: true
         address:
           type: string
         opening_time:
@@ -3938,6 +4652,32 @@ components:
       - id
       - name
       - opening_time
+    RestaurantOrderWebSocketInfo:
+      type: object
+      properties:
+        restaurant_id:
+          type: string
+          format: uuid
+        websocket_path:
+          type: string
+        websocket_url_template:
+          type: string
+        auth:
+          type: string
+        events:
+          type: array
+          items:
+            type: string
+        payload_example:
+          type: object
+          additionalProperties: {}
+      required:
+      - auth
+      - events
+      - payload_example
+      - restaurant_id
+      - websocket_path
+      - websocket_url_template
     RestaurantOwnerProfile:
       type: object
       properties:
@@ -3978,6 +4718,85 @@ components:
       - total_orders
       - total_restaurants
       - total_revenue
+    RestaurantOwnerProfileRequest:
+      type: object
+      properties:
+        avatar:
+          type: string
+          format: binary
+          nullable: true
+        business_name:
+          type: string
+          maxLength: 255
+        contact_number:
+          type: string
+          maxLength: 20
+    RestaurantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          minLength: 1
+        cuisine_type:
+          allOf:
+          - $ref: '#/components/schemas/CuisineTypeEnum'
+          description: |-
+            Type of Cuisine
+
+            * `italian` - Italian
+            * `chinese` - Chinese
+            * `indian` - Indian
+            * `mexican` - Mexican
+            * `american` - American
+            * `japanese` - Japanese
+            * `thai` - Thai
+            * `mediterranean` - Mediterranean
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 255
+        opening_time:
+          type: string
+          format: time
+        closing_time:
+          type: string
+          format: time
+        delivery_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        minimum_order:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        logo:
+          type: string
+          format: binary
+          nullable: true
+      required:
+      - address
+      - closing_time
+      - email
+      - name
+      - opening_time
+    RevenueTrend:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - date
+      - revenue
     Review:
       type: object
       properties:
@@ -4000,13 +4819,42 @@ components:
           description: Unique identifier (UUID)
         rating:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
         comment:
           type: string
           nullable: true
       required:
       - id
+      - menu_item
+      - order
+      - rating
+      - restaurant
+    ReviewRequest:
+      type: object
+      properties:
+        order:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        restaurant:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        menu_item:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID)
+        rating:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        comment:
+          type: string
+          nullable: true
+      required:
       - menu_item
       - order
       - rating
@@ -4045,24 +4893,29 @@ components:
       - id
       - reason
       - restaurant
-    StatusEnum:
-      enum:
-      - pending
-      - confirmed
-      - preparing
-      - ready
-      - picked_up
-      - delivered
-      - cancelled
-      type: string
-      description: |-
-        * `pending` - Pending
-        * `confirmed` - Confirmed
-        * `preparing` - Preparing
-        * `ready` - Ready
-        * `picked_up` - Picked Up
-        * `delivered` - Delivered
-        * `cancelled` - Cancelled
+    SpecialHoursRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        opening_time:
+          type: string
+          format: time
+          nullable: true
+        closing_time:
+          type: string
+          format: time
+          nullable: true
+        is_closed:
+          type: boolean
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - date
+      - reason
     TokenRefresh:
       type: object
       properties:
@@ -4074,7 +4927,15 @@ components:
       required:
       - access
       - refresh
-    UpdateEmail:
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    UpdateEmailRequest:
       type: object
       description: |-
         Initiates email change workflow.
@@ -4088,13 +4949,32 @@ components:
         current_password:
           type: string
           writeOnly: true
+          minLength: 1
         new_email:
           type: string
           format: email
+          minLength: 1
       required:
       - current_password
       - new_email
-    UserRegistration:
+    UpdateOrderStatusRequestRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+      required:
+      - status
+    UpdateOrderStatusResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+      required:
+      - message
+      - status
+    UserRegistrationRequest:
       type: object
       description: |-
         Serializer responsible for handling user registration.
@@ -4108,14 +4988,16 @@ components:
         email:
           type: string
           format: email
+          minLength: 1
           description: Unique email address for the user.
         password:
           type: string
           writeOnly: true
-          description: Password must be at least 8 characters long.
           minLength: 8
+          description: Password must be at least 8 characters long.
         username:
           type: string
+          minLength: 1
           description: Username for login
           maxLength: 150
         first_name:
@@ -4231,3 +5113,15 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: JWT access token from /api/v1/users/auth/login/
+tags:
+- name: Auth
+  description: Register, login, logout, verify email, password reset
+- name: Users
+  description: Profiles, addresses, drivers list, favorites
+- name: Restaurants
+  description: Restaurants, hours, availability, dashboard
+- name: Menu
+  description: Menu items and restaurant menus
+- name: Orders
+  description: Orders, status, drivers, ratings, reviews, cancellation

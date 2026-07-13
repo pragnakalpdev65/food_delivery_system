@@ -1,10 +1,11 @@
 from rest_framework import status, permissions
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.constants.messages import AuthMessages
 from apps.core.constants.error_codes import ErrorCodes
+from apps.core.constants.choices import UserType
 from apps.users.api.v1.serializers.profile import (
     ChangePasswordSerializer,
     UpdateEmailSerializer,
@@ -18,7 +19,7 @@ from apps.users.api.v1.serializers.profile import (
 )
 from apps.users.models import CustomUser
 from apps.users.models.profile import CustomerProfile, Address, DriverProfile,RestaurantOwnerProfile
-from drf_spectacular.utils import extend_schema, OpenApiTypes, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiTypes, OpenApiExample, OpenApiParameter
 
 
 class CustomerProfileView(APIView):
@@ -337,32 +338,29 @@ class RestaurantOwnerProfileView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    def _get_or_create_profile(self, user):
+        if user.user_type != UserType.RESTAURANT_OWNER:
+            return None
+
+        profile, _ = RestaurantOwnerProfile.objects.get_or_create(user=user)
+        return profile
+
     @extend_schema(
         tags=["Users"],
         summary="Get restaurant owner profile",
         responses=RestaurantOwnerProfileSerializer,
     )
     def get(self, request):
-        try:
-            profile = request.user.restaurant_owner_profile
+        profile = self._get_or_create_profile(request.user)
 
-            # Refresh statistics before returning
-            profile.update_statistics()
-
-        except RestaurantOwnerProfile.DoesNotExist:
+        if profile is None:
             return Response(
-                {
-                    "detail": getattr(
-                        AuthMessages,
-                        "RESTAURANT_OWNER_NOT_FOUND",
-                        "Restaurant owner profile not found"
-                    )
-                },
-                status=ErrorCodes.NOT_FOUND,
+                {"detail": AuthMessages.RESTAURANT_OWNER_NOT_FOUND},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
+        profile.update_statistics()
         serializer = RestaurantOwnerProfileSerializer(profile)
-
         return Response(serializer.data)
 
     @extend_schema(
@@ -372,19 +370,25 @@ class RestaurantOwnerProfileView(APIView):
         responses=RestaurantOwnerProfileSerializer,
     )
     def put(self, request):
-        try:
-            profile = request.user.restaurant_owner_profile
+        return self._update_profile(request)
 
-        except RestaurantOwnerProfile.DoesNotExist:
+    @extend_schema(
+        tags=["Users"],
+        summary="Update restaurant owner profile (POST)",
+        description="Same as PUT. Accepts partial profile updates for restaurant owners.",
+        request=RestaurantOwnerProfileSerializer,
+        responses=RestaurantOwnerProfileSerializer,
+    )
+    def post(self, request):
+        return self._update_profile(request)
+
+    def _update_profile(self, request):
+        profile = self._get_or_create_profile(request.user)
+
+        if profile is None:
             return Response(
-                {
-                    "detail": getattr(
-                        AuthMessages,
-                        "RESTAURANT_OWNER_NOT_FOUND",
-                        "Restaurant owner profile not found"
-                    )
-                },
-                status=ErrorCodes.NOT_FOUND,
+                {"detail": AuthMessages.RESTAURANT_OWNER_NOT_FOUND},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         serializer = RestaurantOwnerProfileSerializer(
@@ -395,15 +399,13 @@ class RestaurantOwnerProfileView(APIView):
 
         if serializer.is_valid():
             serializer.save()
-
             profile.update_statistics()
-
             return Response(serializer.data)
 
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST,
-        )            
+        )
 class ChangePasswordView(APIView):
     """Allow authenticated user to change password and invalidate all sessions."""
 
@@ -472,72 +474,122 @@ class UpdateEmailView(APIView):
 
 class CurrentEmailConfirmView(APIView):
     """
-    API to confirm user's current (old) email.
+    Confirm current (old) email via link from email.
 
-    Workflow:
-        - User clicks link sent to old email
-        - Token is validated
-        - Marks old email as confirmed in cache
+    Email links hit the frontend as:
+      {FRONTEND_URL}/current-email-confirm/?token=<token>
+
+    Frontend should call:
+      GET /api/v1/users/profile/email/current-confirm/?token=<token>
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     @extend_schema(
         tags=["Users"],
-        request=CurrentEmailConfirmSerializer,
+        summary="Confirm current email for email change",
+        description=(
+            "Confirm the current email using the `token` query param from the email link. "
+            "No auth required — user is resolved from the signed token."
+        ),
+        auth=[],
+        parameters=[
+            OpenApiParameter(
+                name="token",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Token from current-email confirmation link",
+            )
+        ],
         responses=OpenApiTypes.OBJECT,
     )
     def get(self, request):
-        """
-        Confirm old email using token from query params.
-        """
-        user = request.user
-
-        serializer = CurrentEmailConfirmSerializer(
-            data=request.data,
-            context={"user": user}
-        )
+        serializer = CurrentEmailConfirmSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
         return Response(
             {"message": AuthMessages.CONFIRM_OLD_EMAIL},
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
-
-class ConfirmEmailChangeView(APIView):
-    """
-    API to finalize email change.
-
-    Workflow:
-        - User clicks link sent to new email
-        - Validates new email token
-        - Ensures old email already confirmed
-
-        - Updates user's email
-        - Invalidates existing sessions (security)
-    """
-    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         tags=["Users"],
+        summary="Confirm current email (POST)",
+        description="Same as GET; accepts `token` (or legacy `old_token`) in JSON body.",
+        auth=[],
+        request=CurrentEmailConfirmSerializer,
+        responses=OpenApiTypes.OBJECT,
+    )
+    def post(self, request):
+        serializer = CurrentEmailConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"message": AuthMessages.CONFIRM_OLD_EMAIL},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ConfirmEmailChangeView(APIView):
+    """
+    Finalize email change via link sent to the new address.
+
+    Email links hit the frontend as:
+      {FRONTEND_URL}/confirm-email-change/?token=<token>
+
+    Frontend should call:
+      GET /api/v1/users/profile/email/change-confirm/?token=<token>
+
+    Note: old email must be confirmed first. After success, JWT sessions are
+    invalidated and the user must verify the new email then log in again.
+    """
+
+    permission_classes = [AllowAny]
+
+    def _confirm(self, data):
+        serializer = ConfirmEmailChangeSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {
+                "message": AuthMessages.EMAIL_UPDATED,
+                "detail": (
+                    "Email updated. Please verify the new email and log in again."
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(
+        tags=["Users"],
+        summary="Confirm new email for email change",
+        description=(
+            "Confirm the new email using the `token` query param from the email link. "
+            "Requires prior confirmation of the old email."
+        ),
+        auth=[],
+        parameters=[
+            OpenApiParameter(
+                name="token",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Token from new-email confirmation link",
+            )
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
+    def get(self, request):
+        return self._confirm(request.query_params)
+
+    @extend_schema(
+        tags=["Users"],
+        summary="Confirm new email (POST)",
+        description="Same as GET; accepts `token` (or legacy `new_token`) in JSON body.",
+        auth=[],
         request=ConfirmEmailChangeSerializer,
         responses=OpenApiTypes.OBJECT,
     )
     def post(self, request):
-        """
-        Confirm new email and complete email update process.
-        """
-        user = request.user
-
-        serializer = ConfirmEmailChangeSerializer(
-            data=request.data,
-            context={"user": user}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(
-            {"message": AuthMessages.EMAIL_UPDATED},
-            status=status.HTTP_200_OK
-        )
+        return self._confirm(request.data)

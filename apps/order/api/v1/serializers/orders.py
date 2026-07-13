@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 
 from apps.core.constants.messages import AuthMessages
 from apps.order.models.order import Order, OrderItem
@@ -72,6 +73,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_ordered_items(self, obj):
         return [
             item.menu_item.name

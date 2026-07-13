@@ -370,51 +370,66 @@ class UpdateEmailSerializer(serializers.Serializer):
 class CurrentEmailConfirmSerializer(serializers.Serializer):
     """
     Confirms user's old email using token validation.
+
+    Accepts `token` (from email link) or legacy `old_token`.
     """
 
-    old_token = serializers.CharField()
+    token = serializers.CharField(required=False, allow_blank=True)
+    old_token = serializers.CharField(required=False, allow_blank=True)
 
-    def validate_old_token(self, value):
-        """
-        Validate old email token and prevent reuse.
-        """
+    def validate(self, attrs):
+        token = attrs.get("token") or attrs.get("old_token")
+        if not token:
+            raise serializers.ValidationError(
+                {"token": "token is required"},
+                code=ErrorCodes.MISSING_TOKEN,
+            )
+
         logger.debug("Validating old email token")
 
         try:
             self.data_payload = signing.loads(
-                value, salt="current-email", max_age=60 * 60 * 24
+                token, salt="current-email", max_age=60 * 60 * 24
             )
         except SignatureExpired:
             logger.warning("Old token expired")
             raise serializers.ValidationError(
                 AuthMessages.TOKEN_EXPIRED,
-                code=ErrorCodes.INVALID_TOKEN
+                code=ErrorCodes.INVALID_TOKEN,
             )
         except BadSignature:
             logger.error("Invalid old token")
             raise serializers.ValidationError(
                 AuthMessages.INVALID_TOKEN,
-                code=ErrorCodes.INVALID_TOKEN
+                code=ErrorCodes.INVALID_TOKEN,
             )
 
-        if cache.get(CacheKey.OLD_TOKEN % value):
+        if cache.get(CacheKey.OLD_TOKEN % token):
             logger.warning("Old token reuse attempt")
             raise serializers.ValidationError(
                 AuthMessages.TOKEN_EXPIRED,
-                code=ErrorCodes.INVALID_TOKEN
+                code=ErrorCodes.INVALID_TOKEN,
             )
 
-        return value
+        user_id = self.data_payload.get("user_id")
+        try:
+            self.user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise serializers.ValidationError(
+                AuthMessages.USER_NOT_FOUND,
+                code=ErrorCodes.USER_NOT_FOUND,
+            )
+
+        attrs["token"] = token
+        return attrs
 
     def save(self, **kwargs):
-        """
-        Mark old email as confirmed.
-        """
-        user = self.context["user"]
-        old_token = self.validated_data["old_token"]
+        """Mark old email as confirmed."""
+        user = self.user
+        token = self.validated_data["token"]
         logger.info("Old email confirmed", extra={"user_id": user.id})
 
-        cache.set(CacheKey.OLD_TOKEN % old_token, {"is_used": True}, timeout=60)
+        cache.set(CacheKey.OLD_TOKEN % token, {"is_used": True}, timeout=60)
         mail_key = CacheKey.EMAIL_CHANGE % user.email
         data = cache.get(mail_key)
 
@@ -422,63 +437,79 @@ class CurrentEmailConfirmSerializer(serializers.Serializer):
             logger.error("Email change request expired (old confirm)")
             raise serializers.ValidationError(
                 AuthMessages.REQUEST_EXPIRED,
-                code=ErrorCodes.REQUEST_EXPIRED)
+                code=ErrorCodes.REQUEST_EXPIRED,
+            )
 
         data["old_confirmed"] = True
         cache.set(mail_key, data, timeout=60 * 60 * 24)
-
         return user
+
 
 class ConfirmEmailChangeSerializer(serializers.Serializer):
     """
     Finalizes email change after both confirmations.
+
+    Accepts `token` (from email link) or legacy `new_token`.
     """
 
-    new_token = serializers.CharField()
+    token = serializers.CharField(required=False, allow_blank=True)
+    new_token = serializers.CharField(required=False, allow_blank=True)
 
-    def validate_new_token(self, value):
-        """
-        Validate new email token and prevent reuse.
-        """
+    def validate(self, attrs):
+        token = attrs.get("token") or attrs.get("new_token")
+        if not token:
+            raise serializers.ValidationError(
+                {"token": "token is required"},
+                code=ErrorCodes.MISSING_TOKEN,
+            )
+
         logger.debug("Validating new email token")
- 
+
         try:
             self.data_payload = signing.loads(
-                value, salt="new-email", max_age=60 * 60 * 24
+                token, salt="new-email", max_age=60 * 60 * 24
             )
         except SignatureExpired:
             logger.warning("New token expired")
             raise serializers.ValidationError(
                 AuthMessages.TOKEN_EXPIRED,
-                code=ErrorCodes.INVALID_TOKEN
+                code=ErrorCodes.INVALID_TOKEN,
             )
         except BadSignature:
             logger.error("Invalid new token")
             raise serializers.ValidationError(
                 AuthMessages.INVALID_TOKEN,
-                code=ErrorCodes.INVALID_TOKEN
+                code=ErrorCodes.INVALID_TOKEN,
             )
 
-        if cache.get(CacheKey.NEW_TOKEN % value):
+        if cache.get(CacheKey.NEW_TOKEN % token):
             logger.warning("New token reuse attempt")
             raise serializers.ValidationError(
                 AuthMessages.TOKEN_EXPIRED,
-                code=ErrorCodes.INVALID_TOKEN
+                code=ErrorCodes.INVALID_TOKEN,
             )
 
-        return value
+        user_id = self.data_payload.get("user_id")
+        try:
+            self.user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise serializers.ValidationError(
+                AuthMessages.USER_NOT_FOUND,
+                code=ErrorCodes.USER_NOT_FOUND,
+            )
+
+        attrs["token"] = token
+        return attrs
 
     def save(self, **kwargs):
-        """
-        Complete email update and invalidate existing sessions.
-        """
-        old_mail_user = self.context["user"]
-        old_email = old_mail_user.email
+        """Complete email update and invalidate existing sessions."""
+        user = self.user
+        old_email = user.email
+        token = self.validated_data["token"]
 
-        new_email = self.data_payload.get("email")
-        new_token = self.validated_data["new_token"]
-        logger.info("Completing email change", extra={"new_email": new_email})
-        cache.set(CacheKey.NEW_TOKEN % new_token, {"is_used": True}, timeout=60)
+        logger.info("Completing email change", extra={"user_id": user.id})
+        cache.set(CacheKey.NEW_TOKEN % token, {"is_used": True}, timeout=60)
+
         mail_key = CacheKey.EMAIL_CHANGE % old_email
         data = cache.get(mail_key)
 
@@ -486,45 +517,47 @@ class ConfirmEmailChangeSerializer(serializers.Serializer):
             logger.error("Email change request expired (final step)")
             raise serializers.ValidationError(
                 AuthMessages.REQUEST_EXPIRED,
-                code=ErrorCodes.REQUEST_EXPIRED)
+                code=ErrorCodes.REQUEST_EXPIRED,
+            )
 
-        if not data["old_confirmed"]:
+        if not data.get("old_confirmed"):
             logger.warning("Old email not confirmed before new email")
-            raise serializers.ValidationError("First confirm change from your old mail")
+            raise serializers.ValidationError(
+                "First confirm change from your old mail"
+            )
+
+        new_email = data.get("new_email") or self.data_payload.get("email")
+        if not new_email:
+            raise serializers.ValidationError(
+                AuthMessages.REQUEST_EXPIRED,
+                code=ErrorCodes.REQUEST_EXPIRED,
+            )
 
         data["new_confirmed"] = True
         cache.set(mail_key, data, timeout=60 * 60 * 24)
 
-        if data["old_confirmed"] and data["new_confirmed"]:
-            try:
-                user = User.objects.get(email=old_email)
-                user.email = new_email
-                user.is_verified = False
-                user.save(update_fields=["email", "is_verified"])
-                logger.info("Email updated successfully", extra={"user_id": user.id})
+        user.email = new_email
+        user.is_verified = False
+        user.save(update_fields=["email", "is_verified"])
+        logger.info("Email updated successfully", extra={"user_id": user.id})
 
-                AuthEmailService().send_token_email(
-                    user=user,
-                    salt="email-verification",
-                    url_name="verify-email",
-                    subject="Verify your email - LetsCallAI",
-                    template_name="verification",
-                    context_key="verification_url",
-                )
+        AuthEmailService().send_token_email(
+            user=user,
+            salt="email-verification",
+            url_name="verify-email",
+            subject="Verify your email - LetsCallAI",
+            template_name="verification",
+            context_key="verification_url",
+        )
 
-                tokens = OutstandingToken.objects.filter(user=user)
-                for token in tokens:
-                    BlacklistedToken.objects.get_or_create(token=token)
-                logger.info("Tokens blacklisted after email change", extra={"user_id": user.id})
-
-            except User.DoesNotExist:
-                logger.error("User not found during email update")
-                raise serializers.ValidationError(
-                    AuthMessages.USER_NOT_FOUND,
-                    code=ErrorCodes.USER_NOT_FOUND
-                )
+        tokens = OutstandingToken.objects.filter(user=user)
+        for outstanding in tokens:
+            BlacklistedToken.objects.get_or_create(token=outstanding)
+        logger.info(
+            "Tokens blacklisted after email change",
+            extra={"user_id": user.id},
+        )
 
         cache.delete(mail_key)
         logger.debug("Cache cleared after email change")
-
         return user

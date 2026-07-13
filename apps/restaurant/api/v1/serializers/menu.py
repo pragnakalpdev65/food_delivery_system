@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 from apps.restaurant.models.menu import MenuItem
 
 class MenuItemSerializer(serializers.ModelSerializer):
@@ -16,6 +18,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
         instance = MenuItem.objects.create(**validated_data)
         return instance
     
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_favorited(self, obj):
         request = self.context.get("request")
 

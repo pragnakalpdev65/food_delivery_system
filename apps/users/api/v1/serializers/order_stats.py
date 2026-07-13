@@ -9,7 +9,7 @@ from apps.order.models.order import Order, OrderItem
 from apps.core.constants.choices import OrderStatus
 
 
-class FavoriteRestaurantSerializer(serializers.Serializer):
+class OrderStatsFavoriteRestaurantSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
     order_count = serializers.IntegerField()
@@ -49,7 +49,7 @@ class OrderStatsSerializer(serializers.Serializer):
         max_digits=10,
         decimal_places=2
     )
-    favorite_restaurant = FavoriteRestaurantSerializer(
+    favorite_restaurant = OrderStatsFavoriteRestaurantSerializer(
         allow_null=True
     )
     most_ordered_item = MostOrderedItemSerializer(
