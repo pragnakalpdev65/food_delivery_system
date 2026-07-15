@@ -144,4 +144,100 @@ class TestOrderAPI:
         url = reverse('orders-update-status', args=[order.id])
         response = client.post(url, {}, format='json')
 
-        assert response.status_code == 400 
+        assert response.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# is_available lifecycle tests
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def driver_with_profile(db):
+    """Driver user whose DriverProfile is auto-created by the post_save signal."""
+    uid = uuid.uuid4().hex[:8]
+    user = CustomUser.objects.create_user(
+        username=f"driver_{uid}",
+        email=f"driver_{uid}@example.com",
+        password="pass123",
+        user_type=UserType.DELIVERY_DRIVER,
+    )
+    # Signal creates DriverProfile automatically — no manual create needed.
+    return user
+
+
+@pytest.mark.django_db
+class TestDriverAvailabilityLifecycle:
+    """
+    Tests the full is_available lifecycle:
+      True (default) → False (on assign) → True (on DELIVERED)
+    """
+
+    def test_driver_is_available_by_default(self, driver_with_profile):
+        """DriverProfile starts with is_available=True."""
+        assert driver_with_profile.driver_profile.is_available is True
+
+    def test_assign_driver_sets_unavailable(self, owner, driver_with_profile, order, client):
+        """After assign_driver, driver's is_available must become False."""
+        order.status = OrderStatus.READY
+        order.save()
+
+        client.force_authenticate(user=owner)
+        url = reverse("orders-assign-driver", args=[order.id])
+        response = client.post(url, {"driver_id": driver_with_profile.id}, format="json")
+
+        assert response.status_code == 200
+        driver_with_profile.driver_profile.refresh_from_db()
+        assert driver_with_profile.driver_profile.is_available is False
+
+    def test_cannot_assign_unavailable_driver(self, owner, driver_with_profile, restaurant, customer, client):
+        """A driver with is_available=False must be rejected with 400."""
+        driver_with_profile.driver_profile.update_availability(False)
+
+        # Create a fresh READY order
+        order = Order.objects.create(
+            customer=customer,
+            restaurant=restaurant,
+            delivery_address="Some Street",
+            status=OrderStatus.READY,
+        )
+
+        client.force_authenticate(user=owner)
+        url = reverse("orders-assign-driver", args=[order.id])
+        response = client.post(url, {"driver_id": driver_with_profile.id}, format="json")
+
+        assert response.status_code == 400
+        assert response.data["code"] == "driver_unavailable"
+
+    def test_delivered_resets_driver_to_available(self, owner, driver_with_profile, order, client):
+        """When order status reaches DELIVERED, driver's is_available resets to True."""
+        # Assign the driver (sets is_available=False)
+        order.status = OrderStatus.READY
+        order.save()
+
+        client.force_authenticate(user=owner)
+        assign_url = reverse("orders-assign-driver", args=[order.id])
+        client.post(assign_url, {"driver_id": driver_with_profile.id}, format="json")
+
+        driver_with_profile.driver_profile.refresh_from_db()
+        assert driver_with_profile.driver_profile.is_available is False  # sanity check
+
+        # Now move to DELIVERED
+        order.refresh_from_db()
+        status_url = reverse("orders-update-status", args=[order.id])
+        response = client.post(status_url, {"status": OrderStatus.DELIVERED}, format="json")
+
+        assert response.status_code == 200
+        driver_with_profile.driver_profile.refresh_from_db()
+        assert driver_with_profile.driver_profile.is_available is True
+
+    def test_assign_driver_with_nonexistent_driver_id(self, owner, order, client):
+        """Passing a random UUID that doesn't exist must return 404."""
+        order.status = OrderStatus.READY
+        order.save()
+
+        client.force_authenticate(user=owner)
+        url = reverse("orders-assign-driver", args=[order.id])
+        response = client.post(url, {"driver_id": uuid.uuid4()}, format="json")
+
+        assert response.status_code == 404
+        assert response.data["code"] == "driver_profile_not_found"

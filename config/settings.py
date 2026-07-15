@@ -32,6 +32,7 @@ ALLOWED_HOSTS = env.ALLOWED_HOSTS
 
 # Application definition
 INSTALLED_APPS = [
+    "daphne",              # Enables ASGI/WebSocket support via manage.py runserver (Channels 4+)
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
