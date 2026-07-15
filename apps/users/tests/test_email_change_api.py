@@ -54,10 +54,10 @@ class TestEmailChangeFlow:
         )
         assert old_resp.status_code == status.HTTP_200_OK
 
-        # Step 3: confirm new email via GET ?token=
+        # Step 3: confirm new email via GET ?new_token=
         new_resp = api_client.get(
             reverse("confirm-email-change"),
-            {"token": new_token},
+            {"new_token": new_token},
         )
         assert new_resp.status_code == status.HTTP_200_OK
         assert "Email updated successfully" in new_resp.data["message"]
@@ -79,11 +79,11 @@ class TestEmailChangeFlow:
 
         response = api_client.get(
             reverse("confirm-email-change"),
-            {"token": new_token},
+            {"new_token": new_token},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_legacy_old_token_body_still_works(self, auth_client, user, api_client):
+    def test_legacy_old_token_query_still_works(self, auth_client, user, api_client):
         auth_client.post(
             reverse("email-change-request"),
             {
@@ -94,12 +94,52 @@ class TestEmailChangeFlow:
         )
         old_token = signing.dumps({"user_id": str(user.id)}, salt="current-email")
 
-        response = api_client.post(
+        response = api_client.get(
             reverse("current-email-confirm"),
             {"old_token": old_token},
-            format="json",
         )
         assert response.status_code == status.HTTP_200_OK
 
         mail_key = CacheKey.EMAIL_CHANGE % "old@example.com"
         assert cache.get(mail_key)["old_confirmed"] is True
+
+    def test_confirm_email_change_via_post(self, auth_client, user, api_client):
+        auth_client.post(
+            reverse("email-change-request"),
+            {
+                "current_password": "securepass123!",
+                "new_email": "post@example.com",
+            },
+            format="json",
+        )
+        old_token = signing.dumps({"user_id": str(user.id)}, salt="current-email")
+        new_token = signing.dumps({"user_id": str(user.id)}, salt="new-email")
+
+        api_client.get(reverse("current-email-confirm"), {"token": old_token})
+
+        response = api_client.post(
+            reverse("confirm-email-change"),
+            {"new_token": new_token},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        user.refresh_from_db()
+        assert user.email == "post@example.com"
+
+    def test_current_email_confirm_rejects_post(self, auth_client, user, api_client):
+        auth_client.post(
+            reverse("email-change-request"),
+            {
+                "current_password": "securepass123!",
+                "new_email": "nopost@example.com",
+            },
+            format="json",
+        )
+        old_token = signing.dumps({"user_id": str(user.id)}, salt="current-email")
+
+        response = api_client.post(
+            reverse("current-email-confirm"),
+            {"token": old_token},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED

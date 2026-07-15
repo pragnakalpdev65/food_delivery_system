@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from rest_framework.test import APIClient
 from django.urls import reverse
@@ -16,18 +18,20 @@ def client():
 
 @pytest.fixture
 def customer(db):
+    uid = uuid.uuid4().hex[:8]
     return CustomUser.objects.create_user(
-        username="customer",
-        email="customer@example.com",  
+        username=f"customer_{uid}",
+        email=f"customer_{uid}@example.com",
         password="pass123",
         user_type=UserType.CUSTOMER
     )
 
 @pytest.fixture
 def owner(db):
+    uid = uuid.uuid4().hex[:8]
     return CustomUser.objects.create_user(
-        username="owner",
-        email="owner@example.com",
+        username=f"owner_{uid}",
+        email=f"owner_{uid}@example.com",
         password="pass123",
         user_type=UserType.RESTAURANT_OWNER,
         is_verified=True,
@@ -35,9 +39,10 @@ def owner(db):
 
 @pytest.fixture
 def driver(db):
+    uid = uuid.uuid4().hex[:8]
     return CustomUser.objects.create_user(
-        username="driver",
-        email="driver@example.com",    
+        username=f"driver_{uid}",
+        email=f"driver_{uid}@example.com",
         password="pass123",
         user_type=UserType.DELIVERY_DRIVER
     )
