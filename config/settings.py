@@ -83,15 +83,41 @@ TEMPLATES = [
 ASGI_APPLICATION = "config.asgi.application"
 
 
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [(env.REDIS_HOST, env.REDIS_PORT)],
+def _build_channel_layers():
+    """
+    Prefer Redis; in DEBUG, fall back to in-memory if Redis is unreachable so
+    local WebSocket connections can still complete.
+    """
+    redis_config = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [(env.REDIS_HOST, env.REDIS_PORT)],
+            },
         },
-    },
-}
+    }
+    if not env.DEBUG:
+        return redis_config
+
+    try:
+        import redis
+
+        client = redis.Redis(
+            host=env.REDIS_HOST,
+            port=env.REDIS_PORT,
+            socket_connect_timeout=0.5,
+        )
+        client.ping()
+        return redis_config
+    except Exception:
+        return {
+            "default": {
+                "BACKEND": "channels.layers.InMemoryChannelLayer",
+            },
+        }
+
+
+CHANNEL_LAYERS = _build_channel_layers()
 REST_FRAMEWORK = {
     # Authentication: Use JWT by default
     "DEFAULT_AUTHENTICATION_CLASSES": (
