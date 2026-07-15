@@ -211,31 +211,41 @@ class OrderViewSet(ModelViewSet):
 
         if not driver_id:
             return Response(
-                {"error":AuthMessages.DRIVER_REQUIRED,
-                  "code" : ErrorCodes.DRIVER_REQUIRED},
-               
+                {"error": AuthMessages.DRIVER_REQUIRED,
+                 "code": ErrorCodes.DRIVER_REQUIRED},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Bug fix: driver could be None if driver_id doesn't exist → AttributeError crash
         driver = CustomUser.objects.filter(id=driver_id).first()
-        if driver.user_type != UserType.DELIVERY_DRIVER :
+        if not driver or driver.user_type != UserType.DELIVERY_DRIVER:
             return Response(
-                {"error":AuthMessages.DRIVER_NOT_FOUND,
-                 "code" : ErrorCodes.DRIVER_NOT_FOUND},
-                
+                {"error": AuthMessages.DRIVER_NOT_FOUND,
+                 "code": ErrorCodes.DRIVER_NOT_FOUND},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         if order.driver:
             return Response(
                 {"error": AuthMessages.ALREADY_ASSIGNED,
-                 "code" : ErrorCodes.ALREADY_ASSIGNED},
-                
+                 "code": ErrorCodes.ALREADY_ASSIGNED},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if order.status != OrderStatus.READY:           
+        if order.status != OrderStatus.READY:
             return Response(
                 {"error": AuthMessages.MUST_BE_READY,
-                  "code" : ErrorCodes.MUST_BE_READY},
-               
+                 "code": ErrorCodes.MUST_BE_READY},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Bug fix: check driver availability before assigning
+        driver_profile = getattr(driver, "driver_profile", None)
+        if driver_profile and not driver_profile.is_available:
+            return Response(
+                {"error": "This driver is currently unavailable.",
+                 "code": "driver_unavailable"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         previous_status = order.status
@@ -243,12 +253,16 @@ class OrderViewSet(ModelViewSet):
         order.status = OrderStatus.PICKED_UP
         order.save(update_fields=["driver", "status", "updated_at"])
 
+        # Bug fix: mark driver as unavailable after assignment
+        if driver_profile:
+            driver_profile.update_availability(False)
+
         WebSocketService.notify_driver_assigned(order)
         WebSocketService.notify_status_updated(
             order, previous_status=previous_status
         )
 
-        return Response({"message":AuthMessages.ASSIGN_SUCCESS })
+        return Response({"message": AuthMessages.ASSIGN_SUCCESS})
 
     @extend_schema(
         tags=["Orders"],
@@ -298,6 +312,12 @@ class OrderViewSet(ModelViewSet):
         if new_status == OrderStatus.DELIVERED:
             order.actual_delivery_time = timezone.now()
             order.save(update_fields=["status", "actual_delivery_time", "updated_at"])
+
+            # Free up the driver so they can accept new deliveries
+            if order.driver:
+                driver_profile = getattr(order.driver, "driver_profile", None)
+                if driver_profile:
+                    driver_profile.update_availability(True)
         else:
             order.save(update_fields=["status", "updated_at"])
 
