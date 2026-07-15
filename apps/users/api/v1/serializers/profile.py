@@ -449,25 +449,17 @@ class ConfirmEmailChangeSerializer(serializers.Serializer):
     """
     Finalizes email change after both confirmations.
 
-    Accepts `token` (from email link query) or legacy `new_token`.
+    Requires `new_token` from the new-email confirmation link.
     """
 
-    token = serializers.CharField(required=False, allow_blank=True)
-    new_token = serializers.CharField(required=False, allow_blank=True)
+    new_token = serializers.CharField()
 
-    def validate(self, attrs):
-        token = attrs.get("token") or attrs.get("new_token")
-        if not token:
-            raise serializers.ValidationError(
-                {"token": "token is required"},
-                code=ErrorCodes.MISSING_TOKEN,
-            )
-
+    def validate_new_token(self, new_token):
         logger.debug("Validating new email token")
 
         try:
             self.data_payload = signing.loads(
-                token, salt="new-email", max_age=60 * 60 * 24
+                new_token, salt="new-email", max_age=60 * 60 * 24
             )
         except SignatureExpired:
             logger.warning("New token expired")
@@ -482,7 +474,7 @@ class ConfirmEmailChangeSerializer(serializers.Serializer):
                 code=ErrorCodes.INVALID_TOKEN,
             )
 
-        if cache.get(CacheKey.NEW_TOKEN % token):
+        if cache.get(CacheKey.NEW_TOKEN % new_token):
             logger.warning("New token reuse attempt")
             raise serializers.ValidationError(
                 AuthMessages.TOKEN_EXPIRED,
@@ -498,17 +490,16 @@ class ConfirmEmailChangeSerializer(serializers.Serializer):
                 code=ErrorCodes.USER_NOT_FOUND,
             )
 
-        attrs["token"] = token
-        return attrs
+        return new_token
 
     def save(self, **kwargs):
         """Complete email update and invalidate existing sessions."""
         user = self.user
         old_email = user.email
-        token = self.validated_data["token"]
+        new_token = self.validated_data["new_token"]
 
         logger.info("Completing email change", extra={"user_id": user.id})
-        cache.set(CacheKey.NEW_TOKEN % token, {"is_used": True}, timeout=60)
+        cache.set(CacheKey.NEW_TOKEN % new_token, {"is_used": True}, timeout=60)
 
         mail_key = CacheKey.EMAIL_CHANGE % old_email
         data = cache.get(mail_key)

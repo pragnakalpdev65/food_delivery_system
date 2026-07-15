@@ -521,8 +521,9 @@ class ConfirmEmailChangeView(APIView):
     Email links hit the frontend as:
       {FRONTEND_URL}/confirm-email-change/?token=<token>
 
-    Frontend should call:
-      GET /api/v1/users/profile/email/change-confirm/?token=<token>
+    Frontend should map that value and call:
+      GET  /api/v1/users/profile/email/change-confirm/?new_token=<token>
+      POST /api/v1/users/profile/email/change-confirm/  {"new_token": "<token>"}
 
     Note: old email must be confirmed first. After success, JWT sessions are
     invalidated and the user must verify the new email then log in again.
@@ -530,27 +531,8 @@ class ConfirmEmailChangeView(APIView):
 
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        tags=["Users"],
-        summary="Confirm new email for email change",
-        description=(
-            "Confirm the new email using the `token` query param from the email link. "
-            "Requires prior confirmation of the old email."
-        ),
-        auth=[],
-        parameters=[
-            OpenApiParameter(
-                name="token",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                required=True,
-                description="Token from new-email confirmation link",
-            )
-        ],
-        responses=OpenApiTypes.OBJECT,
-    )
-    def get(self, request):
-        serializer = ConfirmEmailChangeSerializer(data=request.query_params)
+    def _confirm(self, data):
+        serializer = ConfirmEmailChangeSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
@@ -562,3 +544,38 @@ class ConfirmEmailChangeView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+    @extend_schema(
+        tags=["Users"],
+        summary="Confirm new email for email change",
+        description=(
+            "Confirm the new email using the `new_token` query param from the email link. "
+            "Requires prior confirmation of the old email."
+        ),
+        auth=[],
+        parameters=[
+            OpenApiParameter(
+                name="new_token",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Token from new-email confirmation link",
+            )
+        ],
+        responses=OpenApiTypes.OBJECT,
+    )
+    def get(self, request):
+        return self._confirm(request.query_params)
+
+    @extend_schema(
+        tags=["Users"],
+        summary="Confirm new email (POST)",
+        description="Same as GET; accepts `new_token` in the JSON body.",
+        auth=[],
+        request=ConfirmEmailChangeSerializer,
+        responses=OpenApiTypes.OBJECT,
+    )
+    def post(self, request):
+        return self._confirm(request.data)
+
+
