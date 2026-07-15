@@ -513,23 +513,6 @@ class CurrentEmailConfirmView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    @extend_schema(
-        tags=["Users"],
-        summary="Confirm current email (POST)",
-        description="Same as GET; accepts `token` (or legacy `old_token`) in JSON body.",
-        auth=[],
-        request=CurrentEmailConfirmSerializer,
-        responses=OpenApiTypes.OBJECT,
-    )
-    def post(self, request):
-        serializer = CurrentEmailConfirmSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(
-            {"message": AuthMessages.CONFIRM_OLD_EMAIL},
-            status=status.HTTP_200_OK,
-        )
-
 
 class ConfirmEmailChangeView(APIView):
     """
@@ -546,20 +529,6 @@ class ConfirmEmailChangeView(APIView):
     """
 
     permission_classes = [AllowAny]
-
-    def _confirm(self, data):
-        serializer = ConfirmEmailChangeSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(
-            {
-                "message": AuthMessages.EMAIL_UPDATED,
-                "detail": (
-                    "Email updated. Please verify the new email and log in again."
-                ),
-            },
-            status=status.HTTP_200_OK,
-        )
 
     @extend_schema(
         tags=["Users"],
@@ -581,15 +550,15 @@ class ConfirmEmailChangeView(APIView):
         responses=OpenApiTypes.OBJECT,
     )
     def get(self, request):
-        return self._confirm(request.query_params)
-
-    @extend_schema(
-        tags=["Users"],
-        summary="Confirm new email (POST)",
-        description="Same as GET; accepts `token` (or legacy `new_token`) in JSON body.",
-        auth=[],
-        request=ConfirmEmailChangeSerializer,
-        responses=OpenApiTypes.OBJECT,
-    )
-    def post(self, request):
-        return self._confirm(request.data)
+        serializer = ConfirmEmailChangeSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {
+                "message": AuthMessages.EMAIL_UPDATED,
+                "detail": (
+                    "Email updated. Please verify the new email and log in again."
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )

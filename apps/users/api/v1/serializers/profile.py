@@ -371,7 +371,7 @@ class CurrentEmailConfirmSerializer(serializers.Serializer):
     """
     Confirms user's old email using token validation.
 
-    Accepts `token` (from email link) or legacy `old_token`.
+    Accepts `token` (from email link query) or legacy `old_token`.
     """
 
     token = serializers.CharField(required=False, allow_blank=True)
@@ -449,7 +449,7 @@ class ConfirmEmailChangeSerializer(serializers.Serializer):
     """
     Finalizes email change after both confirmations.
 
-    Accepts `token` (from email link) or legacy `new_token`.
+    Accepts `token` (from email link query) or legacy `new_token`.
     """
 
     token = serializers.CharField(required=False, allow_blank=True)

@@ -83,7 +83,7 @@ class TestEmailChangeFlow:
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_legacy_old_token_body_still_works(self, auth_client, user, api_client):
+    def test_legacy_old_token_query_still_works(self, auth_client, user, api_client):
         auth_client.post(
             reverse("email-change-request"),
             {
@@ -94,10 +94,9 @@ class TestEmailChangeFlow:
         )
         old_token = signing.dumps({"user_id": str(user.id)}, salt="current-email")
 
-        response = api_client.post(
+        response = api_client.get(
             reverse("current-email-confirm"),
             {"old_token": old_token},
-            format="json",
         )
         assert response.status_code == status.HTTP_200_OK
 

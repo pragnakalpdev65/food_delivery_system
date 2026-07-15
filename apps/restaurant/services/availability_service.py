@@ -1,18 +1,16 @@
 from datetime import datetime, timedelta
-
+import uuid
 from django.utils import timezone
-
 from apps.restaurant.models.operating_hours import (
     OperatingHours,
     SpecialHours,
 )
 from apps.restaurant.models.restaurant import Restaurant
-
-
 class RestaurantAvailabilityService:
 
     @staticmethod
     def get_todays_hours(restaurant_id):
+        """Fetches operational hours using a clean ID string or UUID."""
         today = timezone.localdate()
 
         special_hours = SpecialHours.objects.filter(
@@ -31,23 +29,25 @@ class RestaurantAvailabilityService:
         ).first()
 
     @staticmethod
-    def is_currently_open(restaurant):
+    def is_currently_open(restaurant_or_id):
         """
-        Accepts a Restaurant instance or a restaurant id (UUID/str/int).
+        Determines if a restaurant is currently open.
+        Accepts either a Restaurant model instance or a restaurant UUID/ID string.
         """
-        if isinstance(restaurant, Restaurant):
-            restaurant_id = restaurant.id
-        else:
-            restaurant_id = restaurant
+        # Type-safety check: extract id and model safely
+        if isinstance(restaurant_or_id, (str, uuid.UUID)):
+            restaurant_id = restaurant_or_id
+            # Fetch instance from DB for fallback timings if needed
             restaurant = Restaurant.objects.filter(id=restaurant_id).first()
-            if restaurant is None:
-                return False
+        else:
+            restaurant_id = restaurant_or_id.id
+            restaurant = restaurant_or_id
+
+        if not restaurant:
+            return False
 
         now = timezone.localtime().time()
-
-        today_hours = RestaurantAvailabilityService.get_todays_hours(
-            restaurant_id
-        )
+        today_hours = RestaurantAvailabilityService.get_todays_hours(restaurant_id)
 
         if today_hours:
             if today_hours.is_closed:
@@ -56,15 +56,19 @@ class RestaurantAvailabilityService:
             opening_time = today_hours.opening_time
             closing_time = today_hours.closing_time
         else:
-            # Fallback to Restaurant timings
+            # Fallback to base Restaurant model timings
             opening_time = restaurant.opening_time
             closing_time = restaurant.closing_time
 
-        # Normal timings (e.g. 09:00 - 22:00)
+        # Safeguard against missing configurations
+        if not opening_time or not closing_time:
+            return False
+
+        # Normal day timings (e.g., 09:00 - 22:00)
         if opening_time < closing_time:
             return opening_time <= now < closing_time
 
-        # Overnight timings (e.g. 20:00 - 02:00)
+        # Overnight timings (e.g., 20:00 - 02:00)
         return now >= opening_time or now < closing_time
 
     @staticmethod
@@ -117,3 +121,4 @@ class RestaurantAvailabilityService:
                     return opening_datetime
 
         return None
+                                                                                                                       
