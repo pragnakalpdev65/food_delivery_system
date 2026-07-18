@@ -12,6 +12,8 @@ from django.utils import timezone
 
 from apps.order.models.order import Order, OrderItem
 from apps.core.constants.choices import OrderStatus
+
+
 class RestaurantSerializer(serializers.ModelSerializer):
 
     average_rating = serializers.FloatField(read_only=True)
@@ -46,6 +48,13 @@ class RestaurantSerializer(serializers.ModelSerializer):
             "average_order_value",
         ]
         read_only_fields = ["id", "owner"]
+
+    def update(self, instance, validated_data):
+        # Empty multipart logo fields arrive as None and would clear the file.
+        # Only replace logo when a real file is uploaded.
+        if validated_data.get("logo") is None:
+            validated_data.pop("logo", None)
+        return super().update(instance, validated_data)
 
     @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_favorited(self, obj):
