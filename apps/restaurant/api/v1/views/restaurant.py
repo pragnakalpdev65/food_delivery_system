@@ -175,10 +175,9 @@ class RestaurantViewSet(ModelViewSet):
         self.perform_update(serializer)
 
         detail_serializer = RestaurantDetailSerializer(
-            instance,
+            serializer.instance,
             context={"request": request},
         )
-
         return Response(detail_serializer.data, status=status.HTTP_200_OK)
 
     def partial_update(self, request, *args, **kwargs):
