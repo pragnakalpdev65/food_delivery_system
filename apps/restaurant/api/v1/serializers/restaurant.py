@@ -12,6 +12,21 @@ from django.utils import timezone
 
 from apps.order.models.order import Order, OrderItem
 from apps.core.constants.choices import OrderStatus
+
+
+def build_media_url(file_field, request=None):
+    """Return absolute media URL, or None when no file is stored."""
+    if not file_field:
+        return None
+    try:
+        url = file_field.url
+    except (AttributeError, ValueError):
+        return None
+    if request is not None:
+        return request.build_absolute_uri(url)
+    return url
+
+
 class RestaurantSerializer(serializers.ModelSerializer):
 
     average_rating = serializers.FloatField(read_only=True)
@@ -23,6 +38,7 @@ class RestaurantSerializer(serializers.ModelSerializer):
     # New Fields
     net_revenue = serializers.SerializerMethodField()
     average_order_value = serializers.SerializerMethodField()
+    logo = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Restaurant
@@ -46,6 +62,34 @@ class RestaurantSerializer(serializers.ModelSerializer):
             "average_order_value",
         ]
         read_only_fields = ["id", "owner"]
+
+    def _apply_logo_from_request(self, validated_data):
+        """
+        Only set logo from an actual uploaded file in request.FILES.
+        Empty multipart fields become None and must not clear/replace logo.
+        """
+        request = self.context.get("request")
+        uploaded = request.FILES.get("logo") if request is not None else None
+        if uploaded is not None:
+            validated_data["logo"] = uploaded
+        else:
+            validated_data.pop("logo", None)
+
+    def create(self, validated_data):
+        self._apply_logo_from_request(validated_data)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        self._apply_logo_from_request(validated_data)
+        return super().update(instance, validated_data)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["logo"] = build_media_url(
+            instance.logo,
+            self.context.get("request"),
+        )
+        return data
 
     @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_favorited(self, obj):
@@ -90,10 +134,17 @@ class RestaurantSerializer(serializers.ModelSerializer):
             or 0
         )
 class RestaurantListSerializer(serializers.ModelSerializer):
+    logo = serializers.SerializerMethodField()
+
     class Meta:
-        model=Restaurant
-        fields = ["id","name","logo","address","opening_time"]
- 
+        model = Restaurant
+        fields = ["id", "name", "logo", "address", "opening_time"]
+
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_logo(self, obj):
+        return build_media_url(obj.logo, self.context.get("request"))
+
+
 class RevenueTrendSerializer(serializers.Serializer):
     date = serializers.DateField()
     revenue = serializers.DecimalField(max_digits=10, decimal_places=2)
@@ -107,8 +158,12 @@ class CategorySalesSerializer(serializers.Serializer):
 
 class PopularTimeSerializer(serializers.Serializer):
     hour = serializers.IntegerField()
-    order_count = serializers.IntegerField()       
+    order_count = serializers.IntegerField()
+
+
 class RestaurantDetailSerializer(serializers.ModelSerializer):
+    logo = serializers.SerializerMethodField()
+    banner = serializers.SerializerMethodField()
     revenue_trends = serializers.SerializerMethodField()
     sales_by_category = serializers.SerializerMethodField()
     popular_times = serializers.SerializerMethodField()
@@ -136,6 +191,14 @@ class RestaurantDetailSerializer(serializers.ModelSerializer):
             "popular_times",
         ]
         read_only_fields = ["id", "owner"]
+
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_logo(self, obj):
+        return build_media_url(obj.logo, self.context.get("request"))
+
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_banner(self, obj):
+        return build_media_url(obj.banner, self.context.get("request"))
 
     @extend_schema_field(RevenueTrendSerializer(many=True))
     def get_revenue_trends(self, obj):

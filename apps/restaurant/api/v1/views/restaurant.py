@@ -138,10 +138,9 @@ class RestaurantViewSet(ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance)
-
         data = RestaurantCacheService.get_restaurant_detail(
-            instance
+            instance,
+            request=request,
         )
         return Response(data)
 
@@ -174,11 +173,13 @@ class RestaurantViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
+        instance = serializer.instance
+        instance.refresh_from_db()
+
         detail_serializer = RestaurantDetailSerializer(
             instance,
             context={"request": request},
         )
-
         return Response(detail_serializer.data, status=status.HTTP_200_OK)
 
     def partial_update(self, request, *args, **kwargs):
