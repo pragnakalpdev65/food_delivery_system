@@ -23,14 +23,17 @@ class RestaurantCacheService:
         return data
 
     @staticmethod
-    def get_restaurant_detail(restaurant):
-        cache_key = CacheKey.RESTAURANT_DETAIL % restaurant.id
+    def get_restaurant_detail(restaurant, request=None):
+        cache_key = CacheKey.RESTAURANT_DETAIL % str(restaurant.id)
 
         data = cache.get(cache_key)
         if data:
             return data
 
-        data = RestaurantDetailSerializer(restaurant).data
+        data = RestaurantDetailSerializer(
+            restaurant,
+            context={"request": request} if request is not None else {},
+        ).data
         cache.set(cache_key, data, timeout=60 * 10)
         return data
 
@@ -81,7 +84,7 @@ class RestaurantCacheService:
 
     @staticmethod
     def clear_restaurant_detail(restaurant_id):
-        cache.delete(CacheKey.RESTAURANT_DETAIL % restaurant_id)
+        cache.delete(CacheKey.RESTAURANT_DETAIL % str(restaurant_id))
 
     @staticmethod
     def clear_restaurant_menu(restaurant_id):
